@@ -377,9 +377,7 @@ const DashboardClient = ({ user }) => {
             </h3>
             {stats.topProducts && stats.topProducts.length > 0 ? (
               <div>
-                <div className="text-xs text-gray-500 mb-2">
-                  Debug: {stats.topProducts.length} products found
-                </div>
+               
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={stats.topProducts} layout="horizontal">
                     <XAxis
@@ -424,9 +422,7 @@ const DashboardClient = ({ user }) => {
             </h3>
             {stats.shopsPerformance && stats.shopsPerformance.length > 0 ? (
               <div>
-                <div className="text-xs text-gray-500 mb-2">
-                  Debug: {stats.shopsPerformance.length} shops found
-                </div>
+                
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={stats.shopsPerformance} layout="horizontal">
                     <XAxis

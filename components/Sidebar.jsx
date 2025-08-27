@@ -86,7 +86,7 @@ const Sidebar = ({ user }) => {
         },
         {
           name: "Stock",
-          href: "/stock",
+          href: "/dashboard/stock",
           icon: (
             <svg
               className="w-5 h-5"

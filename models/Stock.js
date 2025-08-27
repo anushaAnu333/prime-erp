@@ -1,53 +1,325 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-const stockSchema = new mongoose.Schema(
-  {
-    productName: {
-      type: String,
-      required: [true, "Product name is required"],
-      enum: ["dosa", "idli", "chapati", "parata", "paneer", "green peas"],
-    },
-    companyId: {
-      type: String,
-      required: [true, "Company ID is required"],
-      enum: ["PRIMA-SM", "PRIMA-FT", "PRIMA-EX"],
-    },
-    currentStock: {
-      type: Number,
-      default: 0,
-      min: [0, "Current stock cannot be negative"],
-    },
-    totalPurchases: {
-      type: Number,
-      default: 0,
-      min: [0, "Total purchases cannot be negative"],
-    },
-    totalReturns: {
-      type: Number,
-      default: 0,
-      min: [0, "Total returns cannot be negative"],
-    },
-    totalSales: {
-      type: Number,
-      default: 0,
-      min: [0, "Total sales cannot be negative"],
-    },
-    lastUpdated: {
-      type: Date,
-      default: Date.now,
-    },
+const stockMovementSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    required: true,
+    enum: ["purchase", "sale", "purchase_return", "sale_return", "agent_allocation", "agent_return", "manual_adjustment"],
   },
-  {
-    timestamps: true,
-  }
-);
+  quantity: {
+    type: Number,
+    required: true,
+  },
+  reference: {
+    type: String, // Invoice number, agent name, etc.
+    required: true,
+  },
+  referenceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "referenceModel",
+  },
+  referenceModel: {
+    type: String,
+    enum: ["Purchase", "Sale", "User"], // For agent allocations
+  },
+  notes: {
+    type: String,
+    trim: true,
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+}, {
+  timestamps: true,
+});
 
-// Compound index for unique product-company combination
-stockSchema.index({ productName: 1, companyId: 1 }, { unique: true });
+const agentStockSchema = new mongoose.Schema({
+  agentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  agentName: {
+    type: String,
+    required: true,
+  },
+  stockAllocated: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  stockDelivered: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  stockReturned: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  stockInHand: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  lastUpdated: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+const stockSchema = new mongoose.Schema({
+  product: {
+    type: String,
+    required: [true, "Product is required"],
+    enum: ["dosa", "idli", "chapati", "parata", "paneer", "green peas"],
+  },
+  companyId: {
+    type: String,
+    required: [true, "Company ID is required"],
+    enum: ["PRIMA-SM", "PRIMA-FT", "PRIMA-EX"],
+  },
+  
+  // Stock Formula Components
+  openingStock: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  totalPurchases: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  totalSales: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  closingStock: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  
+  // Agent Stock Allocation
+  agentStocks: [agentStockSchema],
+  
+  // Stock Flow Components
+  stockGiven: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  stockDelivered: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  salesReturns: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  stockAvailable: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  
+  // Product Details
+  unit: {
+    type: String,
+    required: true,
+    enum: ["packets", "packs", "kg"],
+  },
+  expiryDate: {
+    type: Date,
+    required: true,
+  },
+  
+  // Alerts and Settings
+  minimumStock: {
+    type: Number,
+    default: 10,
+    min: 0,
+  },
+  isLowStock: {
+    type: Boolean,
+    default: false,
+  },
+  isExpired: {
+    type: Boolean,
+    default: false,
+  },
+  
+  // Stock Movements History
+  movements: [stockMovementSchema],
+  
+  // Status
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+}, {
+  timestamps: true,
+});
+
+// Indexes for efficient queries
+stockSchema.index({ companyId: 1, product: 1 }, { unique: true });
 stockSchema.index({ companyId: 1 });
-stockSchema.index({ currentStock: 1 });
+stockSchema.index({ product: 1 });
+stockSchema.index({ isLowStock: 1 });
+stockSchema.index({ isExpired: 1 });
+stockSchema.index({ expiryDate: 1 });
 
-const Stock =
-  mongoose.models.Stock || mongoose.model("Stock", stockSchema);
+// Pre-save middleware to calculate closing stock
+stockSchema.pre("save", function(next) {
+  // Calculate closing stock using the formula
+  this.closingStock = this.openingStock + this.totalPurchases - this.totalSales;
+  
+  // Calculate stock available using the flow formula
+  this.stockAvailable = this.stockGiven - this.stockDelivered + this.salesReturns;
+  
+  // Check for low stock
+  this.isLowStock = this.closingStock <= this.minimumStock;
+  
+  // Check for expired stock
+  this.isExpired = new Date() > this.expiryDate;
+  
+  next();
+});
 
-module.exports = Stock;
+// Method to add stock movement
+stockSchema.methods.addMovement = function(movement) {
+  this.movements.push(movement);
+  
+  // Update totals based on movement type
+  switch (movement.type) {
+    case "purchase":
+      this.totalPurchases += movement.quantity;
+      break;
+    case "sale":
+      this.totalSales += movement.quantity;
+      break;
+    case "purchase_return":
+      this.totalPurchases -= movement.quantity;
+      break;
+    case "sale_return":
+      this.totalSales -= movement.quantity;
+      break;
+    case "agent_allocation":
+      this.stockGiven += movement.quantity;
+      break;
+    case "agent_return":
+      this.stockGiven -= movement.quantity;
+      break;
+  }
+  
+  // Recalculate closing stock
+  this.closingStock = this.openingStock + this.totalPurchases - this.totalSales;
+  this.stockAvailable = this.stockGiven - this.stockDelivered + this.salesReturns;
+  
+  return this.save();
+};
+
+// Method to allocate stock to agent
+stockSchema.methods.allocateToAgent = function(agentId, agentName, quantity) {
+  if (quantity > this.closingStock) {
+    throw new Error("Insufficient stock for allocation");
+  }
+  
+  // Find or create agent stock entry
+  let agentStock = this.agentStocks.find(as => as.agentId.toString() === agentId.toString());
+  
+  if (!agentStock) {
+    agentStock = {
+      agentId,
+      agentName,
+      stockAllocated: 0,
+      stockDelivered: 0,
+      stockReturned: 0,
+      stockInHand: 0,
+    };
+    this.agentStocks.push(agentStock);
+  }
+  
+  // Update agent stock
+  agentStock.stockAllocated += quantity;
+  agentStock.stockInHand += quantity;
+  agentStock.lastUpdated = new Date();
+  
+  // Update overall stock
+  this.stockGiven += quantity;
+  this.stockAvailable = this.stockGiven - this.stockDelivered + this.salesReturns;
+  
+  // Add movement record
+  this.addMovement({
+    type: "agent_allocation",
+    quantity,
+    reference: agentName,
+    referenceId: agentId,
+    referenceModel: "User",
+    notes: `Allocated ${quantity} ${this.unit} to ${agentName}`,
+  });
+  
+  return this.save();
+};
+
+// Method to update agent delivery
+stockSchema.methods.updateAgentDelivery = function(agentId, deliveredQuantity) {
+  const agentStock = this.agentStocks.find(as => as.agentId.toString() === agentId.toString());
+  
+  if (!agentStock) {
+    throw new Error("Agent not found in stock allocation");
+  }
+  
+  if (deliveredQuantity > agentStock.stockInHand) {
+    throw new Error("Cannot deliver more than stock in hand");
+  }
+  
+  // Update agent stock
+  agentStock.stockDelivered += deliveredQuantity;
+  agentStock.stockInHand -= deliveredQuantity;
+  agentStock.lastUpdated = new Date();
+  
+  // Update overall stock
+  this.stockDelivered += deliveredQuantity;
+  this.stockAvailable = this.stockGiven - this.stockDelivered + this.salesReturns;
+  
+  return this.save();
+};
+
+// Method to handle sales return
+stockSchema.methods.handleSalesReturn = function(agentId, returnQuantity) {
+  const agentStock = this.agentStocks.find(as => as.agentId.toString() === agentId.toString());
+  
+  if (!agentStock) {
+    throw new Error("Agent not found in stock allocation");
+  }
+  
+  // Update agent stock
+  agentStock.stockReturned += returnQuantity;
+  agentStock.stockInHand += returnQuantity;
+  agentStock.lastUpdated = new Date();
+  
+  // Update overall stock
+  this.salesReturns += returnQuantity;
+  this.stockAvailable = this.stockGiven - this.stockDelivered + this.salesReturns;
+  
+  // Add movement record
+  this.addMovement({
+    type: "sale_return",
+    quantity: returnQuantity,
+    reference: `Return from ${agentStock.agentName}`,
+    notes: `Sales return of ${returnQuantity} ${this.unit}`,
+  });
+  
+  return this.save();
+};
+
+const Stock = mongoose.models.Stock || mongoose.model("Stock", stockSchema);
+
+export default Stock;
