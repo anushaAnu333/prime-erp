@@ -5,7 +5,6 @@ import Vendor from "../../../../models/Vendor";
 import {
   calculatePurchaseTotals,
   generatePurchaseNumber,
-  validatePurchaseData,
 } from "../../../../lib/calculations";
 import { updateStock, updateVendorBalance } from "../../../../lib/stockManager";
 

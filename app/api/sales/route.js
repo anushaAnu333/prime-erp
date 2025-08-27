@@ -7,7 +7,6 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   calculateItemTotals,
   calculateInvoiceTotals,
-  validateInvoiceData,
   generateUniqueInvoiceNumber,
 } from "@/lib/calculations";
 
