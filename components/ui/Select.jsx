@@ -104,7 +104,10 @@ const Select = ({
           ${isOpen ? "ring-2 ring-blue-500 border-blue-500" : ""}
         `}>
         <div className="flex items-center justify-between">
-          <span className={`${value ? "text-gray-900" : "text-gray-500"}`}>
+          <span
+            className={`${
+              value ? "text-gray-900" : "text-gray-500"
+            } truncate text-sm flex-1 min-w-0`}>
             {getSelectedText()}
           </span>
           <svg

@@ -1,12 +1,137 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
 import Select from "../ui/Select";
 import Card from "../ui/Card";
 import Table from "../ui/Table";
 import Link from "next/link";
+
+// DateRangeFilter Component
+const DateRangeFilter = ({ dateFrom, dateTo, onDateChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [localDateFrom, setLocalDateFrom] = useState(dateFrom);
+  const [localDateTo, setLocalDateTo] = useState(dateTo);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    setLocalDateFrom(dateFrom);
+    setLocalDateTo(dateTo);
+  }, [dateFrom, dateTo]);
+
+  const handleApply = () => {
+    onDateChange("dateFrom", localDateFrom);
+    onDateChange("dateTo", localDateTo);
+    setIsOpen(false);
+  };
+
+  const handleClear = () => {
+    setLocalDateFrom("");
+    setLocalDateTo("");
+    onDateChange("dateFrom", "");
+    onDateChange("dateTo", "");
+    setIsOpen(false);
+  };
+
+  const getDisplayText = () => {
+    if (dateFrom && dateTo) {
+      return `${dateFrom} to ${dateTo}`;
+    } else if (dateFrom) {
+      return `From ${dateFrom}`;
+    } else if (dateTo) {
+      return `To ${dateTo}`;
+    }
+    return "Date Range";
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-3 py-2.5 text-left border border-gray-300 rounded-lg shadow-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <div className="flex items-center justify-between">
+          <span
+            className={`${
+              dateFrom || dateTo ? "text-gray-900" : "text-gray-500"
+            } text-sm truncate`}>
+            {getDisplayText()}
+          </span>
+          <svg
+            className={`w-4 h-4 text-gray-400 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 w-80 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+          <div className="p-4">
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  From Date
+                </label>
+                <Input
+                  type="date"
+                  value={localDateFrom}
+                  onChange={(e) => setLocalDateFrom(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  To Date
+                </label>
+                <Input
+                  type="date"
+                  value={localDateTo}
+                  onChange={(e) => setLocalDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button
+                type="button"
+                onClick={handleApply}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 text-sm">
+                Apply
+              </Button>
+              <Button
+                type="button"
+                onClick={handleClear}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 text-sm">
+                Clear
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function PurchaseList() {
   const [purchases, setPurchases] = useState([]);
@@ -298,7 +423,7 @@ export default function PurchaseList() {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
           <Select
             placeholder="Select Vendor"
             options={vendors}
@@ -311,17 +436,10 @@ export default function PurchaseList() {
             value={filters.company}
             onChange={(value) => handleFilterChange("company", value)}
           />
-          <Input
-            type="date"
-            placeholder="From Date"
-            value={filters.dateFrom}
-            onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
-          />
-          <Input
-            type="date"
-            placeholder="To Date"
-            value={filters.dateTo}
-            onChange={(e) => handleFilterChange("dateTo", e.target.value)}
+          <DateRangeFilter
+            dateFrom={filters.dateFrom}
+            dateTo={filters.dateTo}
+            onDateChange={(field, value) => handleFilterChange(field, value)}
           />
           <Select
             options={[

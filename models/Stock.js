@@ -74,7 +74,7 @@ const stockSchema = new mongoose.Schema({
   product: {
     type: String,
     required: [true, "Product is required"],
-    enum: ["dosa", "idli", "chapati", "parata", "paneer", "green peas"],
+    enum: ["dosa", "idli", "chapati", "parata", "paneer", "green peas", "Dosa", "Idli", "Chapati", "Parata", "Paneer", "Green peas"],
   },
   companyId: {
     type: String,

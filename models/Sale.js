@@ -123,6 +123,15 @@ const saleSchema = new mongoose.Schema(
       enum: ["Pending", "Delivered", "Cancelled"],
       default: "Pending",
     },
+    type: {
+      type: String,
+      enum: ["Sale", "Sale Return"],
+      default: "Sale",
+    },
+    originalSaleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Sale",
+    },
   },
   {
     timestamps: true,

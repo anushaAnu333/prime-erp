@@ -49,8 +49,12 @@ const CustomerSelect = ({
 
   // Handle customer selection
   const handleCustomerChange = (customerId) => {
-    if (customerId && onCustomerSelect && typeof onCustomerSelect === "function") {
-      const selectedCustomer = customers.find((c) => c.id === customerId);
+    if (
+      customerId &&
+      onCustomerSelect &&
+      typeof onCustomerSelect === "function"
+    ) {
+      const selectedCustomer = customers.find((c) => c._id === customerId);
       if (selectedCustomer) {
         onCustomerSelect(selectedCustomer);
       }
@@ -59,8 +63,8 @@ const CustomerSelect = ({
 
   // Format options for select
   const options = customers.map((customer) => ({
-    value: customer.id,
-    label: customer.displayName,
+    value: customer._id, // Use _id instead of id
+    label: `${customer.shopName} - ${customer.name}`, // Use shopName and name
     customer: customer,
   }));
 
@@ -82,7 +86,7 @@ const CustomerSelect = ({
       {value && (
         <div className="mt-2 p-2 bg-gray-50 rounded-md">
           {(() => {
-            const selectedCustomer = customers.find((c) => c.id === value);
+            const selectedCustomer = customers.find((c) => c._id === value);
             if (!selectedCustomer) return null;
 
             return (

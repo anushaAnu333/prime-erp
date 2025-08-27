@@ -155,24 +155,24 @@ export default function StockDashboard() {
         </span>
       ),
     },
-    {
-      key: "actions",
-      header: "Actions",
-      render: (_, row) => (
-        <div className="flex gap-2">
-          <Link href={`/dashboard/stock/${row._id}`}>
-            <Button size="sm" variant="outline">
-              View
-            </Button>
-          </Link>
-          <Link href={`/dashboard/stock/${row._id}/allocate`}>
-            <Button size="sm" variant="outline">
-              Allocate
-            </Button>
-          </Link>
-        </div>
-      ),
-    },
+          {
+        key: "actions",
+        header: "Actions",
+        render: (_, row) => (
+          <div className="flex gap-2">
+            <Link href={`/dashboard/stock/${row._id}/edit`}>
+              <Button size="sm" variant="outline">
+                Edit
+              </Button>
+            </Link>
+            <Link href={`/dashboard/stock/${row._id}/allocate`}>
+              <Button size="sm" variant="outline">
+                Allocate
+              </Button>
+            </Link>
+          </div>
+        ),
+      },
   ];
 
   const companyOptions = [

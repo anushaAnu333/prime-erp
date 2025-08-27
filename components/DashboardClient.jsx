@@ -74,6 +74,13 @@ const DashboardClient = ({ user }) => {
     console.log("Current stats state:", stats);
     console.log("Top Products for chart:", stats.topProducts);
     console.log("Shops Performance for chart:", stats.shopsPerformance);
+    console.log(
+      "Shops Performance data structure:",
+      stats.shopsPerformance?.map((s) => ({
+        name: s.name,
+        performance: s.performance,
+      }))
+    );
   }, [stats]);
 
   if (loading) {
@@ -81,56 +88,6 @@ const DashboardClient = ({ user }) => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                disabled
-              />
-              <svg
-                className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-            <button className="p-2 text-gray-400 hover:text-gray-600" disabled>
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-5 5v-5zM4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
-                />
-              </svg>
-            </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600" disabled>
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-            </button>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -159,55 +116,6 @@ const DashboardClient = ({ user }) => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <svg
-                className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-            <button className="p-2 text-gray-400 hover:text-gray-600">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-5 5v-5zM4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
-                />
-              </svg>
-            </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-            </button>
-          </div>
         </div>
 
         <Card className="p-6">
@@ -232,97 +140,6 @@ const DashboardClient = ({ user }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <svg
-              className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-          <button className="p-2 text-gray-400 hover:text-gray-600">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 17h5l-5 5v-5zM4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
-              />
-            </svg>
-          </button>
-          <button className="p-2 text-gray-400 hover:text-gray-600">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="p-4">
-          <div className="text-sm font-medium text-gray-600">
-            Total Purchases
-          </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {formatCurrency(stats.totalPurchases)}
-          </div>
-          <div className="text-xs text-gray-500">
-            {stats.totalPurchases > 0 ? "All companies" : "No purchases"}
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="text-sm font-medium text-gray-600">Total Sales</div>
-          <div className="text-2xl font-bold text-gray-900">
-            {formatCurrency(stats.totalSales)}
-          </div>
-          <div className="text-xs text-gray-500">
-            {stats.totalSales > 0 ? "All shops" : "No sales"}
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="text-sm font-medium text-gray-600">Active Shops</div>
-          <div className="text-2xl font-bold text-gray-900">
-            {stats.activeShops}
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="text-sm font-medium text-gray-600">Top Product</div>
-          <div className="text-lg font-bold text-gray-900">
-            {stats.topProduct.name}
-          </div>
-          <div className="text-xs text-gray-500">
-            {formatCurrency(stats.topProduct.revenue)}
-          </div>
-        </Card>
       </div>
 
       {/* Charts Section */}
@@ -335,7 +152,7 @@ const DashboardClient = ({ user }) => {
               Sales vs Purchases Trend
             </h3>
             {stats.salesTrend.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={stats.salesTrend}>
                   <XAxis
                     dataKey="month"
@@ -364,7 +181,7 @@ const DashboardClient = ({ user }) => {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="flex items-center justify-center h-[250px] text-gray-500">
                 No trend data available
               </div>
             )}
@@ -376,37 +193,66 @@ const DashboardClient = ({ user }) => {
               Top Products
             </h3>
             {stats.topProducts && stats.topProducts.length > 0 ? (
-              <div>
-               
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={stats.topProducts} layout="horizontal">
-                    <XAxis
-                      type="number"
-                      domain={[
-                        0,
-                        Math.max(...stats.topProducts.map((p) => p.revenue)) +
-                          1000,
-                      ]}
-                      fontSize={10}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      width={80}
-                      fontSize={10}
-                      tick={{ fontSize: 10 }}
-                    />
+              <div className="flex items-center justify-center h-[250px]">
+                <ResponsiveContainer width={250} height={250}>
+                  <PieChart>
+                    <Pie
+                      data={stats.topProducts}
+                      cx={125}
+                      cy={125}
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={3}
+                      dataKey="revenue">
+                      {stats.topProducts.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            [
+                              "#3B82F6",
+                              "#10B981",
+                              "#F59E0B",
+                              "#EF4444",
+                              "#8B5CF6",
+                            ][index % 5]
+                          }
+                        />
+                      ))}
+                    </Pie>
                     <Tooltip
                       formatter={(value) => formatCurrency(value)}
                       contentStyle={{ fontSize: 10 }}
                     />
-                    <Bar dataKey="revenue" fill="#3B82F6" barSize={20} />
-                  </BarChart>
+                  </PieChart>
                 </ResponsiveContainer>
+                <div className="ml-6">
+                  <div className="space-y-2">
+                    {stats.topProducts.map((product, index) => (
+                      <div key={index} className="flex items-center">
+                        <div
+                          className="w-3 h-3 rounded-full mr-2"
+                          style={{
+                            backgroundColor: [
+                              "#3B82F6",
+                              "#10B981",
+                              "#F59E0B",
+                              "#EF4444",
+                              "#8B5CF6",
+                            ][index % 5],
+                          }}></div>
+                        <span className="text-sm text-gray-600">
+                          {product.name}
+                        </span>
+                        <span className="text-sm font-medium text-gray-900 ml-2">
+                          {formatCurrency(product.revenue)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="flex items-center justify-center h-[250px] text-gray-500">
                 No product data available
               </div>
             )}
@@ -415,40 +261,51 @@ const DashboardClient = ({ user }) => {
 
         {/* Right Column */}
         <div className="space-y-6">
-          {/* Shops Performance */}
+          {/* Monthly Revenue Trend */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Shops Performance
+              Monthly Revenue Trend
             </h3>
-            {stats.shopsPerformance && stats.shopsPerformance.length > 0 ? (
+            {stats.salesTrend && stats.salesTrend.length > 0 ? (
               <div>
-                
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={stats.shopsPerformance} layout="horizontal">
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={stats.salesTrend}>
                     <XAxis
-                      type="number"
-                      domain={[0, 100]}
+                      dataKey="month"
                       fontSize={10}
                       tick={{ fontSize: 10 }}
                     />
                     <YAxis
-                      dataKey="name"
-                      type="category"
-                      width={80}
+                      type="number"
                       fontSize={10}
                       tick={{ fontSize: 10 }}
+                      tickFormatter={(value) =>
+                        `₹${(value / 1000).toFixed(0)}K`
+                      }
                     />
                     <Tooltip
-                      formatter={(value) => `${value}%`}
+                      formatter={(value) => `₹${value.toLocaleString()}`}
                       contentStyle={{ fontSize: 10 }}
                     />
-                    <Bar dataKey="performance" fill="#3B82F6" barSize={20} />
+                    <Bar
+                      dataKey="sales"
+                      fill="#10B981"
+                      radius={[2, 2, 0, 0]}
+                      barSize={20}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-64 text-gray-500">
-                No shops performance data available
+              <div className="flex items-center justify-center h-[250px] text-gray-500">
+                <div className="text-center">
+                  <div className="text-lg font-medium mb-2">
+                    No revenue data available
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Start creating sales to see trends
+                  </div>
+                </div>
               </div>
             )}
           </Card>
@@ -456,43 +313,53 @@ const DashboardClient = ({ user }) => {
           {/* Invoices Overview */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Invoices Overview
+              Business Overview
             </h3>
-            {stats.invoicesOverview.length > 0 &&
-            stats.invoicesOverview[0].value > 0 ? (
-              <div className="flex items-center justify-center">
-                <ResponsiveContainer width={300} height={300}>
-                  <PieChart>
-                    <Pie
-                      data={stats.invoicesOverview}
-                      cx={150}
-                      cy={150}
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="value">
-                      {stats.invoicesOverview.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value) => `${value}%`}
-                      contentStyle={{ fontSize: 10 }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="ml-8">
-                  <div className="text-3xl font-bold text-gray-900">
-                    {stats.invoicesOverview[0]?.value || 0}%
-                  </div>
-                  <div className="text-sm text-gray-600">Wholesale</div>
+            <div className="grid grid-cols-2 gap-4 h-[250px]">
+              {/* Customers */}
+              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="text-3xl font-bold text-blue-600 mb-1">
+                  {stats.totalCustomers || 0}
+                </div>
+                <div className="text-sm font-medium text-blue-800">
+                  Total Customers
                 </div>
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-64 text-gray-500">
-                No invoice data available
+
+              {/* Vendors */}
+              <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="text-3xl font-bold text-green-600 mb-1">
+                  {stats.totalVendors || 0}
+                </div>
+                <div className="text-sm font-medium text-green-800">
+                  Total Vendors
+                </div>
               </div>
-            )}
+
+              {/* Sales */}
+              <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="text-2xl font-bold text-purple-600 mb-1 truncate">
+                  {typeof stats.totalSales === "number"
+                    ? Math.round(stats.totalSales).toLocaleString()
+                    : stats.totalSales || 0}
+                </div>
+                <div className="text-sm font-medium text-purple-800">
+                  Total Sales
+                </div>
+              </div>
+
+              {/* Purchases */}
+              <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="text-2xl font-bold text-orange-600 mb-1 truncate">
+                  {typeof stats.totalPurchases === "number"
+                    ? Math.round(stats.totalPurchases).toLocaleString()
+                    : stats.totalPurchases || 0}
+                </div>
+                <div className="text-sm font-medium text-orange-800">
+                  Total Purchases
+                </div>
+              </div>
+            </div>
           </Card>
         </div>
       </div>

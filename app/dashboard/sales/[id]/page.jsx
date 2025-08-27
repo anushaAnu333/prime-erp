@@ -8,6 +8,8 @@ import { formatCurrency } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
+import PrintInvoice from "@/components/PrintInvoice";
+import PDFInvoice from "@/components/PDFInvoice";
 
 const ViewInvoicePage = ({ params }) => {
   const router = useRouter();
@@ -18,6 +20,8 @@ const ViewInvoicePage = ({ params }) => {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
   const [deliveryStatus, setDeliveryStatus] = useState("");
+  const [showPrintInvoice, setShowPrintInvoice] = useState(false);
+  const [showPDFInvoice, setShowPDFInvoice] = useState(false);
 
   // Unwrap params for Next.js 15 compatibility
   const unwrappedParams = use(params);
@@ -114,7 +118,12 @@ const ViewInvoicePage = ({ params }) => {
 
   // Handle print
   const handlePrint = () => {
-    window.print();
+    setShowPrintInvoice(true);
+  };
+
+  // Handle PDF download
+  const handlePDFDownload = () => {
+    setShowPDFInvoice(true);
   };
 
   if (loading) {
@@ -160,19 +169,29 @@ const ViewInvoicePage = ({ params }) => {
               : "Invalid Date"}
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 flex space-x-2">
-          <Button variant="outline" onClick={handlePrint}>
+        <div className="mt-4 sm:mt-0 flex space-x-2 no-print">
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            className="print-button">
             Print
           </Button>
           <Button
             variant="outline"
-            onClick={() => router.push(`/dashboard/sales/edit/${sale.id}`)}>
+            onClick={handlePDFDownload}
+            className="pdf-button">
+            Download PDF
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/dashboard/sales/edit/${sale.id}`)}
+            className="edit-button">
             Edit
           </Button>
           <Button
             variant="outline"
             onClick={() => setShowDeleteModal(true)}
-            className="text-red-600 hover:text-red-700">
+            className="delete-button text-red-600 hover:text-red-700">
             Delete
           </Button>
         </div>
@@ -226,34 +245,36 @@ const ViewInvoicePage = ({ params }) => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal:</span>
-                <span className="font-medium">
+                <span className="font-medium text-gray-500">
                   {formatCurrency(sale.subtotal)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Total GST:</span>
-                <span className="font-medium">
+                <span className="font-medium text-gray-500">
                   {formatCurrency(sale.totalGST)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Invoice Value:</span>
-                <span className="font-medium">
+                <span className="font-medium text-gray-500">
                   {formatCurrency(sale.invoiceValue)}
                 </span>
               </div>
               {sale.discount > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Discount:</span>
-                  <span className="font-medium text-red-600">
+                  <span className="font-medium text-gray-500">
                     -{formatCurrency(sale.discount)}
                   </span>
                 </div>
               )}
               <div className="border-t pt-2">
                 <div className="flex justify-between text-lg font-bold">
-                  <span>Final Amount:</span>
-                  <span>{formatCurrency(sale.finalAmount)}</span>
+                  <span className="text-gray-600">Final Amount:</span>
+                  <span className="font-medium text-red-600">
+                    {formatCurrency(sale.finalAmount)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -467,6 +488,16 @@ const ViewInvoicePage = ({ params }) => {
           </div>
         </div>
       </Modal>
+
+      {/* Print Invoice Component */}
+      {showPrintInvoice && (
+        <PrintInvoice sale={sale} onClose={() => setShowPrintInvoice(false)} />
+      )}
+
+      {/* PDF Invoice Component */}
+      {showPDFInvoice && (
+        <PDFInvoice sale={sale} onClose={() => setShowPDFInvoice(false)} />
+      )}
     </div>
   );
 };

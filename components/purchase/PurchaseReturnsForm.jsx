@@ -146,7 +146,7 @@ export default function PurchaseReturnsForm() {
 
           // Auto-fill items from original purchase
           const autoFilledItems = purchase.items.map((item) => ({
-            product: item.product,
+            product: item.product.toLowerCase(),
             expiryDate: new Date(item.expiryDate).toISOString().split("T")[0],
             qty: item.qty.toString(),
             rate: item.rate.toString(),
@@ -236,7 +236,7 @@ export default function PurchaseReturnsForm() {
         vendorName: formData.vendorName,
         companyId: formData.companyId,
         items: items.map((item) => ({
-          product: item.product,
+          product: item.product.toLowerCase(),
           expiryDate: item.expiryDate,
           qty: parseFloat(item.qty),
           rate: parseFloat(item.rate),

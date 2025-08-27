@@ -164,7 +164,7 @@ export default function PurchaseInvoiceForm() {
         supplierInvoiceNumber: formData.supplierInvoiceNumber,
         supplierInvoiceDate: formData.supplierInvoiceDate,
         items: items.map((item) => ({
-          product: item.product,
+          product: item.product.toLowerCase(),
           expiryDate: item.expiryDate,
           qty: parseFloat(item.qty),
           rate: parseFloat(item.rate),

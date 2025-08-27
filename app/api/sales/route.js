@@ -29,6 +29,10 @@ export async function GET(request) {
     const customer = searchParams.get("customer") || "";
     const dateFrom = searchParams.get("dateFrom") || "";
     const dateTo = searchParams.get("dateTo") || "";
+    const paymentStatus = searchParams.get("paymentStatus") || "";
+    const deliveryStatus = searchParams.get("deliveryStatus") || "";
+    const company = searchParams.get("company") || "";
+    const type = searchParams.get("type") || "Sale";
 
     // Build query based on user role and company access
     let query = {};
@@ -52,6 +56,27 @@ export async function GET(request) {
       query.customerName = { $regex: customer, $options: "i" };
     }
 
+    // Add company filter
+    if (company) {
+      query.companyId = company;
+    }
+
+    // Add payment status filter
+    if (paymentStatus) {
+      query.paymentStatus = paymentStatus;
+    }
+
+    // Add delivery status filter
+    if (deliveryStatus) {
+      query.deliveryStatus = deliveryStatus;
+    }
+
+    // Add type filter - only filter if type is "Sale Return"
+    // For "Sale" type, we'll include all records (including legacy ones without type field)
+    if (type === "Sale Return") {
+      query.type = type;
+    }
+
     // Add date filters
     if (dateFrom || dateTo) {
       query.date = {};
@@ -69,7 +94,7 @@ export async function GET(request) {
     // Get sales with pagination
     const sales = await Sale.find(query)
       .select(
-        "invoiceNo date customerName shopName phoneNumber total deliveryAgent companyId items"
+        "invoiceNo date customerName shopName phoneNumber total deliveryAgent companyId items paymentStatus deliveryStatus type originalSaleId"
       )
       .sort({ date: -1 })
       .skip(skip)
@@ -93,6 +118,10 @@ export async function GET(request) {
       finalAmount: sale.total,
       deliveryAgent: sale.deliveryAgent,
       companyId: sale.companyId,
+      paymentStatus: sale.paymentStatus || "Pending",
+      deliveryStatus: sale.deliveryStatus || "Pending",
+      type: sale.type || "Sale",
+      originalSaleId: sale.originalSaleId,
     }));
 
     return NextResponse.json({

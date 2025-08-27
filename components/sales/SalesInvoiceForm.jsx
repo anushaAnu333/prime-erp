@@ -106,8 +106,8 @@ const SalesInvoiceForm = ({
   const handleCustomerSelect = (customer) => {
     setFormData((prev) => ({
       ...prev,
-      customerId: customer.id,
-      customerName: customer.name,
+      customerId: customer._id, // Use _id instead of id
+      customerName: customer?.name,
     }));
   };
 
@@ -132,10 +132,11 @@ const SalesInvoiceForm = ({
       const qty = parseFloat(updatedItems[index].qty) || 0;
       const rate = parseFloat(updatedItems[index].rate) || 0;
       const product = updatedItems[index].product;
+      const productDetails = updatedItems[index].productDetails; // Store product details
 
       if (product && qty && rate) {
         const totals = calculateItemTotals(
-          product,
+          productDetails || product, // Pass product details if available
           qty,
           rate,
           updatedItems[index].expiryDate
@@ -159,12 +160,13 @@ const SalesInvoiceForm = ({
       ...updatedItems[index],
       product: product.name,
       rate: product.rate,
+      productDetails: product, // Store the full product object
     };
 
     // Recalculate totals if qty is already set
     if (updatedItems[index].qty && product.rate) {
       const totals = calculateItemTotals(
-        product.name,
+        product, // Pass the full product object
         updatedItems[index].qty,
         product.rate,
         updatedItems[index].expiryDate
@@ -192,6 +194,7 @@ const SalesInvoiceForm = ({
         taxableValue: 0,
         gst: 0,
         invoiceValue: 0,
+        productDetails: null, // Add productDetails field
       },
     ]);
   };
@@ -215,7 +218,7 @@ const SalesInvoiceForm = ({
         customerId: formData.customerId,
         customerName: formData.customerName,
         items: items.map((item) => ({
-          product: item.product,
+          product: item.product.toLowerCase(),
           qty: parseFloat(item.qty),
           rate: parseFloat(item.rate),
           expiryDate: item.expiryDate,
@@ -289,7 +292,7 @@ const SalesInvoiceForm = ({
                 Customer Name
               </label>
               <CustomerSelect
-                value={formData.customerId}
+                value={formData?.customerId}
                 onCustomerSelect={handleCustomerSelect}
                 required
               />
@@ -299,7 +302,7 @@ const SalesInvoiceForm = ({
           {/* Items Section */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-800">Items</h3>
+              <h3 className="text-lg font-semibold text-gray-800">Products</h3>
               <Button
                 type="button"
                 onClick={addItem}
