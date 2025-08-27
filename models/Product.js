@@ -51,9 +51,13 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-// Index for efficient queries
+// Optimized indexes for faster queries
 productSchema.index({ companyId: 1, isActive: 1 });
 productSchema.index({ name: 1 });
+productSchema.index({ productCode: 1 });
+productSchema.index({ isActive: 1, createdAt: -1 }); // For pagination
+productSchema.index({ companyId: 1, name: 1 }); // For company + search
+productSchema.index({ companyId: 1, productCode: 1 }); // For company + code search
 
 const Product =
   mongoose.models.Product || mongoose.model("Product", productSchema);

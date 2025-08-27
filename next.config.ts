@@ -1,7 +1,32 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Performance optimizations
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['@/components/ui'],
+  },
+  
+  // Image optimization
+  images: {
+    domains: [],
+    formats: ['image/webp', 'image/avif'],
+  },
+  
+  // Compression
+  compress: true,
+  
+  // Bundle analyzer (optional for debugging)
+  // bundleAnalyzer: process.env.ANALYZE === 'true',
+  
+  // Optimize for Vercel
+  output: 'standalone',
+  
+  // Reduce bundle size
+  swcMinify: true,
+  
+  // Optimize fonts
+  optimizeFonts: true,
 };
 
 export default nextConfig;

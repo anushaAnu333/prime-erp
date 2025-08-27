@@ -36,14 +36,21 @@ export async function GET(request) {
     const products = await Product.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean(); // Use lean() for better performance
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       products,
       total,
       totalPages,
       currentPage: page,
     });
+
+    // Add caching headers
+    response.headers.set('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=59');
+    response.headers.set('X-Response-Time', `${Date.now() - Date.now()}ms`);
+
+    return response;
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(

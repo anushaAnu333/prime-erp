@@ -22,17 +22,26 @@ const DashboardClient = ({ user }) => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch sales data
-      const salesResponse = await fetch("/api/sales?limit=100");
-      const salesData = await salesResponse.json();
+      setLoading(true);
+      
+      // Fetch all data in parallel for better performance
+      const [salesResponse, customersResponse, productsResponse] = await Promise.all([
+        fetch("/api/sales?limit=100"),
+        fetch("/api/customers?limit=100"),
+        fetch("/api/products?limit=100")
+      ]);
 
-      // Fetch customers data
-      const customersResponse = await fetch("/api/customers?limit=100");
-      const customersData = await customersResponse.json();
+      // Check if all responses are ok
+      if (!salesResponse.ok || !customersResponse.ok || !productsResponse.ok) {
+        throw new Error("Failed to fetch dashboard data");
+      }
 
-      // Fetch products data
-      const productsResponse = await fetch("/api/products?limit=100");
-      const productsData = await productsResponse.json();
+      // Parse all responses in parallel
+      const [salesData, customersData, productsData] = await Promise.all([
+        salesResponse.json(),
+        customersResponse.json(),
+        productsResponse.json()
+      ]);
 
       // Calculate statistics
       const totalSales = salesData.sales?.length || 0;
@@ -64,6 +73,16 @@ const DashboardClient = ({ user }) => {
       });
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      // Set default values on error
+      setStats({
+        totalSales: 0,
+        totalRevenue: 0,
+        totalCustomers: 0,
+        totalProducts: 0,
+        recentSales: [],
+        topProducts: [],
+        monthlyRevenue: [],
+      });
     } finally {
       setLoading(false);
     }
