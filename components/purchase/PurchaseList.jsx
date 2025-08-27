@@ -73,7 +73,7 @@ export default function PurchaseList() {
         const data = await response.json();
         setVendors([
           { value: "", label: "All Vendors" },
-          ...data?.map((vendor) => ({
+          ...(data.vendors || []).map((vendor) => ({
             value: vendor.vendorName,
             label: vendor.vendorName,
           })),

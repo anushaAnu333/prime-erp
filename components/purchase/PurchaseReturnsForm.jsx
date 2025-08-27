@@ -85,7 +85,7 @@ export default function PurchaseReturnsForm() {
       if (response.ok) {
         const data = await response.json();
         setVendors(
-          data?.map((vendor) => ({
+          (data.vendors || []).map((vendor) => ({
             value: vendor.vendorName,
             label: `${vendor.vendorName} - ${vendor.contactPerson}`,
           }))
