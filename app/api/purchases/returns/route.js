@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "../../../../lib/mongodb";
 import Purchase from "../../../../models/Purchase";
 import Vendor from "../../../../models/Vendor";
+import Product from "../../../../models/Product";
 import {
   calculatePurchaseTotals,
   generatePurchaseNumber,
@@ -58,20 +59,29 @@ export async function POST(request) {
     }
 
     // Calculate totals for each item
-    const calculatedItems = items.map((item) => {
-      const calculations = calculatePurchaseTotals(
-        item.product,
-        item.qty,
-        item.rate,
-        0 // No discount at item level
-      );
+    const calculatedItems = await Promise.all(
+      items.map(async (item) => {
+        // Get product details to pass to calculatePurchaseTotals
+        const product = await Product.findOne({
+          name: item.product.toLowerCase(),
+        });
 
-      return {
-        ...item,
-        ...calculations,
-        expiryDate: new Date(item.expiryDate),
-      };
-    });
+        const calculations = calculatePurchaseTotals(
+          product || item.product, // Pass product object if found, otherwise string
+          item.qty,
+          item.rate,
+          0 // No discount at item level
+        );
+
+        return {
+          ...item,
+          ...calculations,
+          expiryDate: new Date(item.expiryDate),
+          hsnCode: item.hsnCode || calculations.hsnCode, // Use form HSN code or calculated HSN code
+          unit: item.unit || calculations.unit, // Use form unit or calculated unit
+        };
+      })
+    );
 
     // Calculate total return value
     const totalReturnValue = calculatedItems.reduce(

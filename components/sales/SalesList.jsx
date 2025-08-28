@@ -387,12 +387,12 @@ export default function SalesList() {
           <div className="flex gap-2">
             <Link href="/dashboard/sales/create">
               <Button className="bg-blue-600 hover:bg-blue-700">
-                New Invoice
+                Create Sales Invoice
               </Button>
             </Link>
             <Link href="/dashboard/sales/returns/create">
               <Button className="bg-red-600 hover:bg-red-700">
-                New Return
+                Create Sales Return
               </Button>
             </Link>
           </div>

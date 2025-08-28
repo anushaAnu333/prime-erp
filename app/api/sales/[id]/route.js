@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Sale from "@/models/Sale";
 import Customer from "@/models/Customer";
+import Product from "@/models/Product";
 import { getCurrentUser } from "@/lib/auth";
-import { calculateItemTotals } from "@/lib/calculations";
+import { calculateItemTotals, validateInvoiceData } from "@/lib/calculations";
 
 // GET /api/sales/[id] - Get sale details
 export async function GET(request, { params }) {
@@ -65,6 +66,8 @@ export async function GET(request, { params }) {
         discount: sale.discount,
         finalAmount: sale.total,
         paymentStatus: sale.paymentStatus || "Pending",
+        paymentMode: sale.paymentMode,
+        amountPaid: sale.amountPaid,
         deliveryStatus: sale.deliveryStatus || "Pending",
         agentId: sale.deliveryAgent,
         notes: sale.notes,
@@ -104,6 +107,8 @@ export async function PUT(request, { params }) {
       notes = "",
       invoiceDate,
       paymentStatus,
+      paymentMode,
+      amountPaid,
       deliveryStatus,
     } = body;
 
@@ -137,7 +142,7 @@ export async function PUT(request, { params }) {
     }
 
     // Store old amount for balance adjustment
-    const oldAmount = sale.finalAmount;
+    const oldAmount = sale.total;
 
     // Validate invoice data if items are being updated
     if (items) {
@@ -164,6 +169,49 @@ export async function PUT(request, { params }) {
         { message: "Invalid payment status" },
         { status: 400 }
       );
+    }
+
+    // Validate payment mode and amount if payment status is Partial or Paid
+    if (paymentStatus === "Partial" || paymentStatus === "Paid") {
+      if (!paymentMode || !["Cash", "Online"].includes(paymentMode)) {
+        return NextResponse.json(
+          { message: "Payment mode is required and must be Cash or Online" },
+          { status: 400 }
+        );
+      }
+
+      if (amountPaid === undefined || amountPaid === null || amountPaid < 0) {
+        return NextResponse.json(
+          { message: "Amount paid is required and must be non-negative" },
+          { status: 400 }
+        );
+      }
+
+      // Validate amount based on payment status
+      const amountPaidNum = parseFloat(amountPaid);
+      const saleTotal = parseFloat(sale.total);
+      
+      if (
+        paymentStatus === "Partial" &&
+        (amountPaidNum <= 0 || amountPaidNum >= saleTotal)
+      ) {
+        return NextResponse.json(
+          {
+            message:
+              "For partial payment, amount paid must be greater than 0 and less than total amount",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (paymentStatus === "Paid" && amountPaidNum !== saleTotal) {
+        return NextResponse.json(
+          {
+            message: "For paid status, amount paid must equal the total amount",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     if (
@@ -248,6 +296,8 @@ export async function PUT(request, { params }) {
     if (notes !== undefined) updateData.notes = notes;
     if (invoiceDate) updateData.date = new Date(invoiceDate);
     if (paymentStatus) updateData.paymentStatus = paymentStatus;
+    if (paymentMode) updateData.paymentMode = paymentMode;
+    if (amountPaid !== undefined) updateData.amountPaid = parseFloat(amountPaid);
     if (deliveryStatus) updateData.deliveryStatus = deliveryStatus;
 
     // Recalculate totals if items changed
@@ -270,29 +320,45 @@ export async function PUT(request, { params }) {
     // Update customer balance
     const customer = await Customer.findById(sale.customerId);
     if (customer) {
-      customer.currentBalance =
-        customer.currentBalance - oldAmount + sale.finalAmount;
+      const newAmount = updatedSale.total || 0;
+      const oldAmountNum = oldAmount || 0;
+      const currentBalance = customer.currentBalance || 0;
+      
+      customer.currentBalance = currentBalance - oldAmountNum + newAmount;
+      
+      // Ensure balance is a valid number
+      if (isNaN(customer.currentBalance)) {
+        customer.currentBalance = 0;
+      }
+      
       await customer.save();
     }
 
     return NextResponse.json({
       message: "Sale updated successfully",
       sale: {
-        id: sale._id,
-        invoiceNumber: sale.invoiceNumber,
-        invoiceDate: sale.invoiceDate,
-        customerId: sale.customerId,
-        customerDetails: sale.customerDetails,
-        items: sale.items,
-        subtotal: sale.subtotal,
-        totalGST: sale.totalGST,
-        invoiceValue: sale.invoiceValue,
-        discount: sale.discount,
-        finalAmount: sale.finalAmount,
-        paymentStatus: sale.paymentStatus,
-        deliveryStatus: sale.deliveryStatus,
-        notes: sale.notes,
-        updatedAt: sale.updatedAt,
+        id: updatedSale._id,
+        invoiceNumber: updatedSale.invoiceNo,
+        invoiceDate: updatedSale.date,
+        customerId: updatedSale.customerId,
+        customerDetails: {
+          name: updatedSale.customerName,
+          shopName: updatedSale.shopName,
+          phone: updatedSale.phoneNumber,
+          address: updatedSale.customerAddress,
+        },
+        items: updatedSale.items,
+        subtotal: updatedSale.items.reduce((sum, item) => sum + item.taxableValue, 0),
+        totalGST: updatedSale.items.reduce((sum, item) => sum + item.gst, 0),
+        invoiceValue: updatedSale.items.reduce((sum, item) => sum + item.invoiceValue, 0),
+        discount: updatedSale.discount,
+        finalAmount: updatedSale.total,
+        paymentStatus: updatedSale.paymentStatus,
+        paymentMode: updatedSale.paymentMode,
+        amountPaid: updatedSale.amountPaid,
+        deliveryStatus: updatedSale.deliveryStatus,
+        notes: updatedSale.notes,
+        updatedAt: updatedSale.updatedAt,
       },
     });
   } catch (error) {
@@ -355,7 +421,16 @@ export async function DELETE(request, { params }) {
     // Update customer balance
     const customer = await Customer.findById(sale.customerId);
     if (customer) {
-      customer.currentBalance -= sale.finalAmount;
+      const saleAmount = sale.total || 0;
+      const currentBalance = customer.currentBalance || 0;
+      
+      customer.currentBalance = currentBalance - saleAmount;
+      
+      // Ensure balance is a valid number
+      if (isNaN(customer.currentBalance)) {
+        customer.currentBalance = 0;
+      }
+      
       await customer.save();
     }
 

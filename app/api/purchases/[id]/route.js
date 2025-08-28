@@ -6,25 +6,25 @@ import Purchase from "../../../../models/Purchase";
 export async function GET(request, { params }) {
   try {
     await connectDB();
-    
+
     const { id } = params;
-    
+
     const purchase = await Purchase.findById(id)
-      .populate('createdBy', 'name email')
-      .populate('againstPurchaseId', 'purchaseNumber vendorName');
-    
+      .populate("createdBy", "name email")
+      .populate("againstPurchaseId", "purchaseNumber vendorName");
+
     if (!purchase) {
       return NextResponse.json(
-        { error: 'Purchase not found' },
+        { error: "Purchase not found" },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json(purchase);
   } catch (error) {
-    console.error('Error fetching purchase:', error);
+    console.error("Error fetching purchase:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch purchase' },
+      { error: "Failed to fetch purchase" },
       { status: 500 }
     );
   }
@@ -34,30 +34,40 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   try {
     await connectDB();
-    
+
     const { id } = params;
     const body = await request.json();
-    
+
     const purchase = await Purchase.findById(id);
-    
+
     if (!purchase) {
       return NextResponse.json(
-        { error: 'Purchase not found' },
+        { error: "Purchase not found" },
         { status: 404 }
       );
     }
-    
-    // Only allow status updates for now
-    if (body.status) {
-      purchase.status = body.status;
-      await purchase.save();
+
+    // Update payment and delivery status
+    if (body.paymentStatus !== undefined) {
+      purchase.paymentStatus = body.paymentStatus;
     }
-    
+    if (body.paymentMode !== undefined) {
+      purchase.paymentMode = body.paymentMode;
+    }
+    if (body.amountPaid !== undefined) {
+      purchase.amountPaid = body.amountPaid;
+    }
+    if (body.deliveryStatus !== undefined) {
+      purchase.deliveryStatus = body.deliveryStatus;
+    }
+
+    await purchase.save();
+
     return NextResponse.json(purchase);
   } catch (error) {
-    console.error('Error updating purchase:', error);
+    console.error("Error updating purchase:", error);
     return NextResponse.json(
-      { error: 'Failed to update purchase' },
+      { error: "Failed to update purchase" },
       { status: 500 }
     );
   }
@@ -67,27 +77,27 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    
+
     const { id } = params;
-    
+
     const purchase = await Purchase.findById(id);
-    
+
     if (!purchase) {
       return NextResponse.json(
-        { error: 'Purchase not found' },
+        { error: "Purchase not found" },
         { status: 404 }
       );
     }
-    
+
     // Soft delete by updating status
-    purchase.status = 'Cancelled';
+    purchase.status = "Cancelled";
     await purchase.save();
-    
-    return NextResponse.json({ message: 'Purchase cancelled successfully' });
+
+    return NextResponse.json({ message: "Purchase cancelled successfully" });
   } catch (error) {
-    console.error('Error cancelling purchase:', error);
+    console.error("Error cancelling purchase:", error);
     return NextResponse.json(
-      { error: 'Failed to cancel purchase' },
+      { error: "Failed to cancel purchase" },
       { status: 500 }
     );
   }

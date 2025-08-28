@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const saleItemSchema = new mongoose.Schema({
   productId: {
@@ -42,6 +42,10 @@ const saleItemSchema = new mongoose.Schema({
   gstRate: {
     type: Number,
     required: [true, "GST rate is required"],
+  },
+  hsnCode: {
+    type: String,
+    required: [true, "HSN Code is required"],
   },
   unit: {
     type: String,
@@ -118,6 +122,36 @@ const saleSchema = new mongoose.Schema(
       enum: ["Pending", "Partial", "Paid"],
       default: "Pending",
     },
+    paymentMode: {
+      type: String,
+      enum: ["Cash", "Online"],
+      required: function () {
+        return (
+          this.paymentStatus === "Partial" || this.paymentStatus === "Paid"
+        );
+      },
+    },
+    amountPaid: {
+      type: Number,
+      min: [0, "Amount paid cannot be negative"],
+      required: function () {
+        return (
+          this.paymentStatus === "Partial" || this.paymentStatus === "Paid"
+        );
+      },
+      validate: {
+        validator: function (value) {
+          if (this.paymentStatus === "Partial") {
+            return value > 0 && value < this.total;
+          } else if (this.paymentStatus === "Paid") {
+            return value === this.total;
+          }
+          return true;
+        },
+        message:
+          "Amount paid must be less than total for partial payment and equal to total for paid status",
+      },
+    },
     deliveryStatus: {
       type: String,
       enum: ["Pending", "Delivered", "Cancelled"],
@@ -142,9 +176,10 @@ const saleSchema = new mongoose.Schema(
 saleSchema.index({ companyId: 1 });
 saleSchema.index({ deliveryAgent: 1 });
 saleSchema.index({ date: -1 });
+saleSchema.index({ createdAt: -1 });
 saleSchema.index({ customerName: 1 });
 saleSchema.index({ customerId: 1 });
 
 const Sale = mongoose.models.Sale || mongoose.model("Sale", saleSchema);
 
-module.exports = Sale;
+export default Sale;

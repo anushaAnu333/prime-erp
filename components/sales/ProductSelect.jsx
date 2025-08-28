@@ -82,32 +82,6 @@ const ProductSelect = ({
         displayKey="label"
         valueKey="value"
       />
-      {value && (
-        <div className="mt-2 p-2 bg-gray-50 rounded-md">
-          {(() => {
-            const selectedProduct = products.find((p) => p.name === value);
-            if (!selectedProduct) return null;
-
-            return (
-              <div className="text-sm">
-                <div className="font-medium text-gray-900">
-                  {selectedProduct.name}
-                </div>
-                <div className="text-gray-600">
-                  {selectedProduct.unit} • GST: {selectedProduct.gstRate}%
-                </div>
-                <div className="text-gray-500 text-xs mt-1">
-                  Rate: ₹{selectedProduct.rate}/{selectedProduct.unit}
-                </div>
-                <div className="text-gray-500 text-xs mt-1">
-                  Expiry:{" "}
-                  {new Date(selectedProduct.expiryDate).toLocaleDateString()}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
     </div>
   );
 };

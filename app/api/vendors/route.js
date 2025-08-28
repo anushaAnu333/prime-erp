@@ -8,7 +8,6 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
-    const company = searchParams.get("company") || "";
 
     // Build query
     let query = { isActive: true };
@@ -20,10 +19,6 @@ export async function GET(request) {
         { phone: { $regex: search, $options: "i" } },
         { vendorCode: { $regex: search, $options: "i" } },
       ];
-    }
-
-    if (company) {
-      query.companyId = company;
     }
 
     // Get vendors with filtering
@@ -72,7 +67,7 @@ export async function POST(request) {
     };
 
     let vendorCode = generateVendorCode();
-    
+
     // Ensure vendor code is unique
     let existingVendor = await Vendor.findOne({ vendorCode });
     while (existingVendor) {
@@ -90,7 +85,6 @@ export async function POST(request) {
       email: body.email || "",
       gstNumber: body.gstNumber,
       paymentTerms: body.paymentTerms || "30 days",
-      companyId: body.companyId || "PRIMA-SM",
       currentBalance: body.currentBalance || 0,
     });
 

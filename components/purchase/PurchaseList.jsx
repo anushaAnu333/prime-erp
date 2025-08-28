@@ -411,12 +411,12 @@ export default function PurchaseList() {
           <div className="flex gap-2">
             <Link href="/dashboard/purchases/create">
               <Button className="bg-blue-600 hover:bg-blue-700">
-                New Purchase
+                Create Purchase Invoice
               </Button>
             </Link>
             <Link href="/dashboard/purchases/returns/create">
               <Button className="bg-red-600 hover:bg-red-700">
-                New Return
+                Create Purchase Return
               </Button>
             </Link>
           </div>

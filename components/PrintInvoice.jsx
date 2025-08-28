@@ -153,7 +153,13 @@ const PrintInvoice = ({ sale, onClose }) => {
                   Product Description
                 </th>
                 <th className="border border-gray-300 px-3 py-2 text-center text-sm font-bold">
+                  HSN Code
+                </th>
+                <th className="border border-gray-300 px-3 py-2 text-center text-sm font-bold">
                   Qty
+                </th>
+                <th className="border border-gray-300 px-3 py-2 text-center text-sm font-bold">
+                  Unit
                 </th>
                 <th className="border border-gray-300 px-3 py-2 text-right text-sm font-bold">
                   Rate (₹)
@@ -179,7 +185,13 @@ const PrintInvoice = ({ sale, onClose }) => {
                     {item.product}
                   </td>
                   <td className="border border-gray-300 px-3 py-2 text-sm text-center">
+                    {item.hsnCode || "-"}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 text-sm text-center">
                     {item.qty}
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 text-sm text-center">
+                    {item.unit || "-"}
                   </td>
                   <td className="border border-gray-300 px-3 py-2 text-sm text-right">
                     {formatCurrency(item.rate)}

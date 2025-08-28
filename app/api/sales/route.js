@@ -94,9 +94,9 @@ export async function GET(request) {
     // Get sales with pagination
     const sales = await Sale.find(query)
       .select(
-        "invoiceNo date customerName shopName phoneNumber total deliveryAgent companyId items paymentStatus deliveryStatus type originalSaleId"
+        "invoiceNo date customerName shopName phoneNumber total deliveryAgent companyId items paymentStatus deliveryStatus type originalSaleId createdAt"
       )
-      .sort({ date: -1 })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
@@ -228,8 +228,13 @@ export async function POST(request) {
         }
       }
 
+      // Get product details to pass to calculateItemTotals
+      const product = await Product.findOne({
+        name: item.product.toLowerCase(),
+      });
+
       const itemTotals = calculateItemTotals(
-        item.product,
+        product || item.product, // Pass product object if found, otherwise string
         item.qty,
         item.rate,
         item.expiryDate
@@ -240,6 +245,8 @@ export async function POST(request) {
         ...itemTotals,
         productId: item.productId,
         customerId: customerId,
+        hsnCode: item.hsnCode || itemTotals.hsnCode, // Use form HSN code or calculated HSN code
+        unit: item.unit || itemTotals.unit, // Use form unit or calculated unit
       });
     }
 

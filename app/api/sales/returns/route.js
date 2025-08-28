@@ -68,7 +68,8 @@ export async function POST(request) {
         gst: gst,
         invoiceValue: invoiceValue,
         gstRate: gstRate,
-        unit: "kg",
+        hsnCode: item.hsnCode,
+        unit: item.unit,
       };
     });
 

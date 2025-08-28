@@ -240,6 +240,8 @@ export default function PurchaseReturnsForm() {
           expiryDate: item.expiryDate,
           qty: parseFloat(item.qty),
           rate: parseFloat(item.rate),
+          unit: item.unit,
+          hsnCode: getProductDetails(item.product)?.hsnCode || "",
         })),
         discount: parseFloat(formData.discount) || 0,
       };

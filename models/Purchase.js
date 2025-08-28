@@ -20,6 +20,15 @@ const purchaseItemSchema = new mongoose.Schema({
     required: [true, "Rate is required"],
     min: [0, "Rate cannot be negative"],
   },
+  unit: {
+    type: String,
+    required: [true, "Unit is required"],
+    enum: ["kg", "packet", "piece", "dozen", "box"],
+  },
+  hsnCode: {
+    type: String,
+    required: [true, "HSN Code is required"],
+  },
   taxableValue: {
     type: Number,
     required: [true, "Taxable value is required"],
@@ -92,11 +101,6 @@ const purchaseSchema = new mongoose.Schema(
       required: [true, "Total amount is required"],
       min: [0, "Total cannot be negative"],
     },
-    companyId: {
-      type: String,
-      required: [true, "Company ID is required"],
-      enum: ["PRIMA-SM", "PRIMA-FT", "PRIMA-EX"],
-    },
     purchaseType: {
       type: String,
       required: [true, "Purchase type is required"],
@@ -114,6 +118,25 @@ const purchaseSchema = new mongoose.Schema(
       enum: ["Pending", "Received", "Cancelled", "Returned"],
       default: "Pending",
     },
+    paymentStatus: {
+      type: String,
+      enum: ["Pending", "Partial", "Paid"],
+      default: "Pending",
+    },
+    paymentMode: {
+      type: String,
+      enum: ["Cash", "Online"],
+    },
+    amountPaid: {
+      type: Number,
+      default: 0,
+      min: [0, "Amount paid cannot be negative"],
+    },
+    deliveryStatus: {
+      type: String,
+      enum: ["Pending", "Delivered", "Cancelled"],
+      default: "Pending",
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -126,7 +149,7 @@ const purchaseSchema = new mongoose.Schema(
 );
 
 // Index for efficient queries
-purchaseSchema.index({ companyId: 1, purchaseType: 1 });
+purchaseSchema.index({ purchaseType: 1 });
 purchaseSchema.index({ vendorName: 1 });
 purchaseSchema.index({ date: -1 });
 purchaseSchema.index({ purchaseNumber: 1 }, { unique: true });

@@ -4,29 +4,27 @@ const nextConfig: NextConfig = {
   // Performance optimizations
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['@/components/ui'],
+    optimizePackageImports: ["@/components/ui"],
   },
-  
+
   // Image optimization
   images: {
     domains: [],
-    formats: ['image/webp', 'image/avif'],
+    formats: ["image/webp", "image/avif"],
   },
-  
+
   // Compression
   compress: true,
-  
+
   // Bundle analyzer (optional for debugging)
   // bundleAnalyzer: process.env.ANALYZE === 'true',
-  
+
   // Optimize for Vercel
-  output: 'standalone',
-  
-  // Reduce bundle size
-  swcMinify: true,
-  
-  // Optimize fonts
-  optimizeFonts: true,
+  output: "standalone",
+
+  // Reduce bundle size (swcMinify is now default in Next.js 15)
+
+  // Optimize fonts (optimizeFonts is now default in Next.js 15)
 };
 
 export default nextConfig;

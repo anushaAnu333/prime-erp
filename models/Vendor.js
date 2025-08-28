@@ -62,11 +62,6 @@ const vendorSchema = new mongoose.Schema(
       default: 0,
       min: [0, "Current balance cannot be negative"],
     },
-    companyId: {
-      type: String,
-      required: [true, "Company ID is required"],
-      enum: ["PRIMA-SM", "PRIMA-FT", "PRIMA-EX"],
-    },
     isActive: {
       type: Boolean,
       default: true,
@@ -78,7 +73,7 @@ const vendorSchema = new mongoose.Schema(
 );
 
 // Index for efficient queries
-vendorSchema.index({ companyId: 1, isActive: 1 });
+vendorSchema.index({ isActive: 1 });
 vendorSchema.index({ vendorName: 1 });
 vendorSchema.index({ vendorCode: 1 }, { unique: true });
 

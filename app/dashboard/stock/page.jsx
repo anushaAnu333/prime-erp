@@ -86,21 +86,27 @@ export default function StockDashboard() {
       key: "openingStock",
       header: "Opening Stock",
       render: (value, row) => (
-        <span className="font-mono">{formatNumber(value)} {row.unit}</span>
+        <span className="font-mono">
+          {formatNumber(value)} {row.unit}
+        </span>
       ),
     },
     {
       key: "totalPurchases",
       header: "Purchases",
       render: (value, row) => (
-        <span className="font-mono text-green-600">+{formatNumber(value)} {row.unit}</span>
+        <span className="font-mono text-green-600">
+          +{formatNumber(value)} {row.unit}
+        </span>
       ),
     },
     {
       key: "totalSales",
       header: "Sales",
       render: (value, row) => (
-        <span className="font-mono text-red-600">-{formatNumber(value)} {row.unit}</span>
+        <span className="font-mono text-red-600">
+          -{formatNumber(value)} {row.unit}
+        </span>
       ),
     },
     {
@@ -116,63 +122,72 @@ export default function StockDashboard() {
       key: "stockGiven",
       header: "Given to Agents",
       render: (value, row) => (
-        <span className="font-mono">{formatNumber(value)} {row.unit}</span>
+        <span className="font-mono">
+          {formatNumber(value)} {row.unit}
+        </span>
       ),
     },
     {
       key: "stockDelivered",
       header: "Delivered",
       render: (value, row) => (
-        <span className="font-mono text-blue-600">{formatNumber(value)} {row.unit}</span>
+        <span className="font-mono text-blue-600">
+          {formatNumber(value)} {row.unit}
+        </span>
       ),
     },
     {
       key: "salesReturns",
       header: "Returns",
       render: (value, row) => (
-        <span className="font-mono text-orange-600">{formatNumber(value)} {row.unit}</span>
+        <span className="font-mono text-orange-600">
+          {formatNumber(value)} {row.unit}
+        </span>
       ),
     },
     {
       key: "stockAvailable",
       header: "Available",
       render: (value, row) => (
-        <span className="font-mono font-bold">{formatNumber(value)} {row.unit}</span>
+        <span className="font-mono font-bold">
+          {formatNumber(value)} {row.unit}
+        </span>
       ),
     },
     {
       key: "status",
       header: "Status",
       render: (_, row) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          row.isExpired 
-            ? "bg-red-100 text-red-800" 
-            : row.isLowStock 
-            ? "bg-yellow-100 text-yellow-800" 
-            : "bg-green-100 text-green-800"
-        }`}>
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${
+            row.isExpired
+              ? "bg-red-100 text-red-800"
+              : row.isLowStock
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-green-100 text-green-800"
+          }`}>
           {getStockStatusText(row)}
         </span>
       ),
     },
-          {
-        key: "actions",
-        header: "Actions",
-        render: (_, row) => (
-          <div className="flex gap-2">
-            <Link href={`/dashboard/stock/${row._id}/edit`}>
-              <Button size="sm" variant="outline">
-                Edit
-              </Button>
-            </Link>
-            <Link href={`/dashboard/stock/${row._id}/allocate`}>
-              <Button size="sm" variant="outline">
-                Allocate
-              </Button>
-            </Link>
-          </div>
-        ),
-      },
+    {
+      key: "actions",
+      header: "Actions",
+      render: (_, row) => (
+        <div className="flex gap-2">
+          <Link href={`/dashboard/stock/${row._id}/edit`}>
+            <Button size="sm" variant="outline">
+              Edit
+            </Button>
+          </Link>
+          <Link href={`/dashboard/stock/${row._id}/allocate`}>
+            <Button size="sm" variant="outline">
+              Allocate
+            </Button>
+          </Link>
+        </div>
+      ),
+    },
   ];
 
   const companyOptions = [
@@ -185,15 +200,20 @@ export default function StockDashboard() {
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Stock Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          Stock Dashboard
+        </h1>
         <p className="text-gray-600">
-          Track inventory with the formula: Opening Stock + Purchases - Sales = Closing Stock
+          Track inventory with the formula: Opening Stock + Purchases - Sales =
+          Closing Stock
         </p>
       </div>
 
       {/* Stock Formula Display */}
       <Card className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Stock Formula</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          Stock Formula
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
           <div className="bg-white p-4 rounded-lg shadow-sm">
             <div className="text-2xl font-bold text-blue-600">
@@ -227,14 +247,25 @@ export default function StockDashboard() {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Products</p>
+              <p className="text-sm font-medium text-gray-600">
+                Total Products
+              </p>
               <p className="text-2xl font-bold text-gray-900">
                 {summary.totalProducts || 0}
               </p>
             </div>
             <div className="p-2 bg-blue-100 rounded-lg">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              <svg
+                className="w-6 h-6 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                />
               </svg>
             </div>
           </div>
@@ -243,14 +274,25 @@ export default function StockDashboard() {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Stock Given to Agents</p>
+              <p className="text-sm font-medium text-gray-600">
+                Stock Given to Agents
+              </p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatNumber(summary.totalStockGiven || 0)}
               </p>
             </div>
             <div className="p-2 bg-green-100 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              <svg
+                className="w-6 h-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                />
               </svg>
             </div>
           </div>
@@ -259,14 +301,25 @@ export default function StockDashboard() {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Stock Delivered</p>
+              <p className="text-sm font-medium text-gray-600">
+                Stock Delivered
+              </p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatNumber(summary.totalStockDelivered || 0)}
               </p>
             </div>
             <div className="p-2 bg-yellow-100 rounded-lg">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              <svg
+                className="w-6 h-6 text-yellow-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                />
               </svg>
             </div>
           </div>
@@ -275,14 +328,25 @@ export default function StockDashboard() {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Stock Available</p>
+              <p className="text-sm font-medium text-gray-600">
+                Stock Available
+              </p>
               <p className="text-2xl font-bold text-gray-900">
                 {formatNumber(summary.totalStockAvailable || 0)}
               </p>
             </div>
             <div className="p-2 bg-purple-100 rounded-lg">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-6 h-6 text-purple-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
           </div>
@@ -292,7 +356,9 @@ export default function StockDashboard() {
       {/* Alerts */}
       {(summary.lowStockCount > 0 || summary.expiredCount > 0) && (
         <Card className="mb-6 p-6 border-l-4 border-red-500 bg-red-50">
-          <h3 className="text-lg font-semibold text-red-800 mb-2">Stock Alerts</h3>
+          <h3 className="text-lg font-semibold text-red-800 mb-2">
+            Stock Alerts
+          </h3>
           <div className="flex gap-4">
             {summary.lowStockCount > 0 && (
               <div className="flex items-center gap-2">
@@ -329,15 +395,13 @@ export default function StockDashboard() {
             <Button
               variant={filters.lowStock ? "default" : "outline"}
               onClick={() => handleFilterChange("lowStock", !filters.lowStock)}
-              size="sm"
-            >
+              size="sm">
               Low Stock
             </Button>
             <Button
               variant={filters.expired ? "default" : "outline"}
               onClick={() => handleFilterChange("expired", !filters.expired)}
-              size="sm"
-            >
+              size="sm">
               Expired
             </Button>
           </div>
@@ -355,7 +419,7 @@ export default function StockDashboard() {
             <Button>Add New Stock</Button>
           </Link>
         </div>
-        
+
         <Table
           columns={columns}
           data={stocks}

@@ -8,7 +8,6 @@ import { formatCurrency } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
-import PrintInvoice from "@/components/PrintInvoice";
 import PDFInvoice from "@/components/PDFInvoice";
 
 const ViewInvoicePage = ({ params }) => {
@@ -19,8 +18,9 @@ const ViewInvoicePage = ({ params }) => {
   const [deleting, setDeleting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
+  const [paymentMode, setPaymentMode] = useState("");
+  const [amountPaid, setAmountPaid] = useState("");
   const [deliveryStatus, setDeliveryStatus] = useState("");
-  const [showPrintInvoice, setShowPrintInvoice] = useState(false);
   const [showPDFInvoice, setShowPDFInvoice] = useState(false);
 
   // Unwrap params for Next.js 15 compatibility
@@ -54,13 +54,77 @@ const ViewInvoicePage = ({ params }) => {
   // Set status values when sale data is loaded
   useEffect(() => {
     if (sale) {
-      setPaymentStatus(sale.paymentStatus || "Pending");
+      console.log("Sale data loaded:", {
+        paymentStatus: sale.paymentStatus,
+        paymentMode: sale.paymentMode,
+        amountPaid: sale.amountPaid,
+        finalAmount: sale.finalAmount,
+        total: sale.total,
+        allKeys: Object.keys(sale),
+      });
+
+      const paymentStatus = sale.paymentStatus || "Pending";
+      setPaymentStatus(paymentStatus);
       setDeliveryStatus(sale.deliveryStatus || "Pending");
+
+      // Auto-fill payment mode and amount based on existing status
+      if (paymentStatus === "Paid") {
+        const amountToSet = sale.amountPaid
+          ? sale.amountPaid.toString()
+          : (sale.finalAmount || sale.total || 0).toString();
+        console.log("Setting Paid status - amountPaid:", amountToSet);
+        setPaymentMode(sale.paymentMode || "Cash");
+        setAmountPaid(amountToSet);
+      } else if (paymentStatus === "Partial") {
+        console.log("Setting Partial status");
+        setPaymentMode(sale.paymentMode || "Cash");
+        // For Partial status, if no amount is saved, suggest half the total amount
+        if (sale.amountPaid) {
+          setAmountPaid(sale.amountPaid.toString());
+        } else {
+          const suggestedAmount = Math.floor(
+            (sale.finalAmount || sale.total || 0) / 2
+          );
+          setAmountPaid(suggestedAmount.toString());
+          console.log(
+            "No saved amount for Partial status, suggesting:",
+            suggestedAmount
+          );
+        }
+      } else {
+        console.log("Setting Pending status");
+        setPaymentMode(sale.paymentMode || "");
+        setAmountPaid(sale.amountPaid ? sale.amountPaid.toString() : "");
+      }
     }
   }, [sale]);
 
   // Handle status update
   const handleStatusUpdate = async () => {
+    // Validate required fields
+    if (paymentStatus === "Partial" || paymentStatus === "Paid") {
+      if (!paymentMode) {
+        alert("Please select a payment mode");
+        return;
+      }
+      if (!amountPaid || amountPaid <= 0) {
+        alert("Please enter a valid amount paid");
+        return;
+      }
+
+      const amountPaidNum = parseFloat(amountPaid);
+      if (paymentStatus === "Partial" && amountPaidNum >= sale.finalAmount) {
+        alert(
+          "For partial payment, amount paid must be less than the total amount"
+        );
+        return;
+      }
+      if (paymentStatus === "Paid" && amountPaidNum !== sale.finalAmount) {
+        alert("For paid status, amount paid must equal the total amount");
+        return;
+      }
+    }
+
     setUpdatingStatus(true);
     try {
       const response = await fetch(`/api/sales/${saleId}`, {
@@ -70,6 +134,8 @@ const ViewInvoicePage = ({ params }) => {
         },
         body: JSON.stringify({
           paymentStatus,
+          paymentMode,
+          amountPaid: amountPaid ? parseFloat(amountPaid) : undefined,
           deliveryStatus,
         }),
       });
@@ -114,11 +180,6 @@ const ViewInvoicePage = ({ params }) => {
       setDeleting(false);
       setShowDeleteModal(false);
     }
-  };
-
-  // Handle print
-  const handlePrint = () => {
-    setShowPrintInvoice(true);
   };
 
   // Handle PDF download
@@ -170,12 +231,6 @@ const ViewInvoicePage = ({ params }) => {
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-2 no-print">
-          <Button
-            variant="outline"
-            onClick={handlePrint}
-            className="print-button">
-            Print
-          </Button>
           <Button
             variant="outline"
             onClick={handlePDFDownload}
@@ -277,6 +332,50 @@ const ViewInvoicePage = ({ params }) => {
                   </span>
                 </div>
               </div>
+
+              {/* Payment Information */}
+              {sale.paymentStatus !== "Pending" && (
+                <div className="border-t pt-2 mt-2">
+                  <div className="text-sm text-gray-600 mb-1">
+                    Payment Information:
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Status:</span>
+                    <span
+                      className={`font-medium ${
+                        sale.paymentStatus === "Paid"
+                          ? "text-green-600"
+                          : "text-blue-600"
+                      }`}>
+                      {sale.paymentStatus}
+                    </span>
+                  </div>
+                  {sale.paymentMode && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Mode:</span>
+                      <span className="font-medium text-gray-900">
+                        {sale.paymentMode}
+                      </span>
+                    </div>
+                  )}
+                  {sale.amountPaid && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Amount Paid:</span>
+                      <span className="font-medium text-green-600">
+                        {formatCurrency(sale.amountPaid)}
+                      </span>
+                    </div>
+                  )}
+                  {sale.paymentStatus === "Partial" && sale.amountPaid && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Balance:</span>
+                      <span className="font-medium text-orange-600">
+                        {formatCurrency(sale.finalAmount - sale.amountPaid)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </Card.Content>
         </Card>
@@ -311,13 +410,123 @@ const ViewInvoicePage = ({ params }) => {
                 </div>
                 <select
                   value={paymentStatus}
-                  onChange={(e) => setPaymentStatus(e.target.value)}
+                  onChange={(e) => {
+                    const newStatus = e.target.value;
+                    console.log(
+                      "Payment status changed to:",
+                      newStatus,
+                      "sale.finalAmount:",
+                      sale?.finalAmount
+                    );
+                    setPaymentStatus(newStatus);
+                    // Auto-fill amount paid and payment mode based on status
+                    if (newStatus === "Paid" && sale) {
+                      console.log(
+                        "Auto-filling Paid status with amount:",
+                        sale.finalAmount
+                      );
+                      setAmountPaid(sale.finalAmount.toString());
+                      setPaymentMode("Cash"); // Default to Cash for Paid status
+                    } else if (newStatus === "Partial") {
+                      console.log("Auto-filling Partial status");
+                      // For Partial status, suggest half the total amount
+                      const suggestedAmount = Math.floor(
+                        (sale.finalAmount || sale.total || 0) / 2
+                      );
+                      setAmountPaid(suggestedAmount.toString());
+                      setPaymentMode("Cash"); // Default to Cash for Partial status
+                    } else if (newStatus === "Pending") {
+                      console.log("Clearing fields for Pending status");
+                      setAmountPaid("");
+                      setPaymentMode("");
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white">
                   <option value="Pending">Pending</option>
                   <option value="Partial">Partial</option>
                   <option value="Paid">Paid</option>
                 </select>
               </div>
+
+              {/* Payment Mode - Only show if status is Partial or Paid */}
+              {(paymentStatus === "Partial" || paymentStatus === "Paid") && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    Payment Mode:
+                  </label>
+                  <div className="mb-2">
+                    {sale.paymentMode && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                        Current: {sale.paymentMode}
+                      </span>
+                    )}
+                    {paymentMode !== sale.paymentMode && paymentMode && (
+                      <span className="ml-2 text-xs text-blue-600">
+                        (Modified)
+                      </span>
+                    )}
+                  </div>
+                  <select
+                    value={paymentMode}
+                    onChange={(e) => setPaymentMode(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white">
+                    <option value="">Select Payment Mode</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Online">Online</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Amount Paid - Only show if status is Partial or Paid */}
+              {(paymentStatus === "Partial" || paymentStatus === "Paid") && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    Amount Paid (₹):
+                  </label>
+                  <div className="mb-2">
+                    {sale.amountPaid && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                        Current: ₹{sale.amountPaid}
+                      </span>
+                    )}
+                    {amountPaid !==
+                      (sale.amountPaid ? sale.amountPaid.toString() : "") &&
+                      amountPaid && (
+                        <span className="ml-2 text-xs text-blue-600">
+                          (Modified)
+                        </span>
+                      )}
+                  </div>
+                  <input
+                    type="number"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(e.target.value)}
+                    placeholder={
+                      paymentStatus === "Paid"
+                        ? `₹${sale.finalAmount}`
+                        : "Enter amount"
+                    }
+                    min="0"
+                    max={
+                      paymentStatus === "Paid"
+                        ? sale.finalAmount
+                        : sale.finalAmount - 0.01
+                    }
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                  />
+                  {paymentStatus === "Partial" && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Must be less than ₹{sale.finalAmount}
+                    </p>
+                  )}
+                  {paymentStatus === "Paid" && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Must equal ₹{sale.finalAmount}
+                    </p>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="text-sm font-medium text-gray-500 block mb-1">
                   Delivery Status:
@@ -353,12 +562,20 @@ const ViewInvoicePage = ({ params }) => {
                 disabled={
                   updatingStatus ||
                   (paymentStatus === sale.paymentStatus &&
-                    deliveryStatus === sale.deliveryStatus)
+                    paymentMode === sale.paymentMode &&
+                    amountPaid ===
+                      (sale.amountPaid ? sale.amountPaid.toString() : "") &&
+                    deliveryStatus === sale.deliveryStatus) ||
+                  ((paymentStatus === "Partial" || paymentStatus === "Paid") &&
+                    (!paymentMode || !amountPaid || amountPaid <= 0))
                 }
                 className="w-full">
                 {updatingStatus
                   ? "Updating..."
                   : paymentStatus === sale.paymentStatus &&
+                    paymentMode === sale.paymentMode &&
+                    amountPaid ===
+                      (sale.amountPaid ? sale.amountPaid.toString() : "") &&
                     deliveryStatus === sale.deliveryStatus
                   ? "No Changes"
                   : "Update Status"}
@@ -390,7 +607,13 @@ const ViewInvoicePage = ({ params }) => {
                     Product
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    HSN Code
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Quantity
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Unit
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Rate (₹)
@@ -413,7 +636,13 @@ const ViewInvoicePage = ({ params }) => {
                       {item.product}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.hsnCode || "-"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {item.qty}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.unit || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatCurrency(item.rate)}
@@ -488,11 +717,6 @@ const ViewInvoicePage = ({ params }) => {
           </div>
         </div>
       </Modal>
-
-      {/* Print Invoice Component */}
-      {showPrintInvoice && (
-        <PrintInvoice sale={sale} onClose={() => setShowPrintInvoice(false)} />
-      )}
 
       {/* PDF Invoice Component */}
       {showPDFInvoice && (

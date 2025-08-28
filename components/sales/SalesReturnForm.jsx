@@ -20,6 +20,7 @@ export default function SalesReturnForm() {
       expiryDate: "",
       qty: "",
       rate: "",
+      unit: "",
       taxableValue: 0,
       gst: 0,
       invoiceValue: 0,
@@ -31,6 +32,34 @@ export default function SalesReturnForm() {
     invoiceValue: 0,
     total: 0,
   });
+
+  const [products, setProducts] = useState([]);
+
+  const UNITS = ["kg", "packet", "piece", "dozen", "box"];
+
+  // Fetch products on component mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("/api/products");
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data.products || []);
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const getProductDetails = (productName) => {
+    return products.find(
+      (p) => p.name.toLowerCase() === productName.toLowerCase()
+    );
+  };
+
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     againstSaleId: "",
@@ -88,6 +117,7 @@ export default function SalesReturnForm() {
             expiryDate: new Date(item.expiryDate).toISOString().split("T")[0],
             qty: item.qty.toString(),
             rate: item.rate.toString(),
+            unit: item.unit || "",
             taxableValue: item.taxableValue,
             gst: item.gst,
             invoiceValue: item.invoiceValue,
@@ -106,6 +136,7 @@ export default function SalesReturnForm() {
           expiryDate: "",
           qty: "",
           rate: "",
+          unit: "",
           taxableValue: 0,
           gst: 0,
           invoiceValue: 0,
@@ -154,6 +185,7 @@ export default function SalesReturnForm() {
         expiryDate: "",
         qty: "",
         rate: "",
+        unit: "",
         taxableValue: 0,
         gst: 0,
         invoiceValue: 0,
@@ -183,6 +215,8 @@ export default function SalesReturnForm() {
           expiryDate: item.expiryDate,
           qty: parseFloat(item.qty),
           rate: parseFloat(item.rate),
+          unit: item.unit,
+          hsnCode: getProductDetails(item.product)?.hsnCode || "",
         })),
         discount: parseFloat(formData.discount) || 0,
       };
@@ -334,7 +368,7 @@ export default function SalesReturnForm() {
               {items.map((item, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border border-gray-200 rounded-lg">
+                  className="grid grid-cols-1 md:grid-cols-8 gap-4 p-4 border border-gray-200 rounded-lg">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Product
@@ -345,6 +379,17 @@ export default function SalesReturnForm() {
                         handleItemChange(index, "product", e.target.value)
                       }
                       required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      HSN Code
+                    </label>
+                    <Input
+                      value={getProductDetails(item.product)?.hsnCode || ""}
+                      disabled
+                      className="bg-gray-50"
+                      placeholder="HSN Code"
                     />
                   </div>
                   <div>
@@ -371,6 +416,23 @@ export default function SalesReturnForm() {
                       onChange={(e) =>
                         handleItemChange(index, "qty", e.target.value)
                       }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Unit
+                    </label>
+                    <Select
+                      options={UNITS.map((unit) => ({
+                        value: unit,
+                        label: unit,
+                      }))}
+                      value={item.unit}
+                      onChange={(value) =>
+                        handleItemChange(index, "unit", value)
+                      }
+                      placeholder="Unit"
                       required
                     />
                   </div>

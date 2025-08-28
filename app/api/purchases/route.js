@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { connectDB } from "../../../lib/mongodb";
 import Purchase from "../../../models/Purchase";
 import Vendor from "../../../models/Vendor";
+import Product from "../../../models/Product";
 import {
   calculatePurchaseTotals,
   generatePurchaseNumber,
+  validatePurchaseData,
 } from "../../../lib/calculations";
 import { updateStock, updateVendorBalance } from "../../../lib/stockManager";
 
@@ -17,16 +19,11 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page")) || 1;
     const limit = parseInt(searchParams.get("limit")) || 20;
     const vendor = searchParams.get("vendor");
-    const company = searchParams.get("company");
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     const type = searchParams.get("type") || "Purchase";
 
     let filter = { purchaseType: type };
-
-    if (company) {
-      filter.companyId = company;
-    }
 
     if (vendor) {
       filter.vendorName = new RegExp(vendor, "i");
@@ -108,7 +105,6 @@ export async function POST(request) {
     const body = await request.json();
     const {
       vendorName,
-      companyId,
       supplierInvoiceNumber,
       supplierInvoiceDate,
       items,
@@ -120,7 +116,6 @@ export async function POST(request) {
     // Validate purchase data
     const validation = validatePurchaseData({
       vendorName,
-      companyId,
       supplierInvoiceNumber,
       supplierInvoiceDate,
       items,
@@ -137,7 +132,6 @@ export async function POST(request) {
     // Get vendor details
     const vendor = await Vendor.findOne({
       vendorName: vendorName.trim(),
-      companyId,
     });
 
     if (!vendor) {
@@ -145,20 +139,29 @@ export async function POST(request) {
     }
 
     // Calculate totals for each item
-    const calculatedItems = items.map((item) => {
-      const calculations = calculatePurchaseTotals(
-        item.product,
-        item.qty,
-        item.rate,
-        0 // No discount at item level
-      );
+    const calculatedItems = await Promise.all(
+      items.map(async (item) => {
+        // Get product details to pass to calculatePurchaseTotals
+        const product = await Product.findOne({
+          name: item.product.toLowerCase(),
+        });
 
-      return {
-        ...item,
-        ...calculations,
-        expiryDate: new Date(item.expiryDate),
-      };
-    });
+        const calculations = calculatePurchaseTotals(
+          product || item.product, // Pass product object if found, otherwise string
+          item.qty,
+          item.rate,
+          0 // No discount at item level
+        );
+
+        return {
+          ...item,
+          ...calculations,
+          expiryDate: new Date(item.expiryDate),
+          hsnCode: item.hsnCode || calculations.hsnCode, // Use form HSN code or calculated HSN code
+          unit: item.unit || calculations.unit, // Use form unit or calculated unit
+        };
+      })
+    );
 
     // Calculate total invoice value
     const totalInvoiceValue = calculatedItems.reduce(
@@ -168,7 +171,7 @@ export async function POST(request) {
     const finalTotal = totalInvoiceValue - discount;
 
     // Generate purchase number
-    const purchaseNumber = await generatePurchaseNumber(companyId);
+    const purchaseNumber = await generatePurchaseNumber();
 
     // Create purchase record
     const purchase = new Purchase({
@@ -188,11 +191,9 @@ export async function POST(request) {
       items: calculatedItems,
       discount,
       total: finalTotal,
-      companyId,
       purchaseType,
       againstPurchaseId,
       status: purchaseType === "Purchase" ? "Pending" : "Returned",
-      // createdBy: body.createdBy || 'system' // This should come from auth
     });
 
     await purchase.save();
@@ -204,7 +205,6 @@ export async function POST(request) {
         item.product,
         item.qty,
         operation,
-        companyId,
         purchaseType === "Purchase" ? "purchase" : "return"
       );
     }

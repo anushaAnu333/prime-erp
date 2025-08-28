@@ -3,18 +3,16 @@
 import { useState, useEffect } from "react";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-import Select from "../../../components/ui/Select";
 import Card from "../../../components/ui/Card";
-import Table from "../../../components/ui/Table";
+import Table, { ActionIcons } from "../../../components/ui/Table";
+import Modal from "../../../components/ui/Modal";
+import { useModal } from "../../../hooks/useModal";
 import Link from "next/link";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [companyOptions, setCompanyOptions] = useState([]);
   const [filters, setFilters] = useState({
     search: "",
-    company: "",
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -22,10 +20,11 @@ export default function ProductsPage() {
     totalPages: 0,
   });
   const [loading, setLoading] = useState(false);
+  const { modalState, showSuccess, showError, showConfirm, hideModal } =
+    useModal();
 
   useEffect(() => {
     fetchProducts();
-    fetchCompanies();
   }, [filters, pagination.page]);
 
   const fetchProducts = async () => {
@@ -35,7 +34,6 @@ export default function ProductsPage() {
         page: pagination.page.toString(),
         limit: "20",
         ...(filters.search && { search: filters.search }),
-        ...(filters.company && { company: filters.company }),
       });
 
       const response = await fetch(`/api/products?${params}`);
@@ -50,28 +48,9 @@ export default function ProductsPage() {
       }
     } catch (error) {
       console.error("Error fetching products:", error);
+      showError("Failed to fetch products");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchCompanies = async () => {
-    try {
-      const response = await fetch("/api/companies");
-      if (response.ok) {
-        const data = await response.json();
-        const companyList = data.companies || [];
-        setCompanies(companyList);
-        setCompanyOptions([
-          { value: "", label: "All Companies" },
-          ...companyList.map((company) => ({
-            value: company.companyCode,
-            label: company.name,
-          })),
-        ]);
-      }
-    } catch (error) {
-      console.error("Error fetching companies:", error);
     }
   };
 
@@ -87,15 +66,27 @@ export default function ProductsPage() {
     setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-IN");
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amount);
+  const handleDelete = async (productId, productName) => {
+    showConfirm(
+      `Are you sure you want to delete "${productName}"?`,
+      "Confirm Delete",
+      async () => {
+        try {
+          const response = await fetch(`/api/products/${productId}`, {
+            method: "DELETE",
+          });
+          if (response.ok) {
+            showSuccess(`Product "${productName}" deleted successfully`);
+            fetchProducts();
+          } else {
+            showError("Failed to delete product");
+          }
+        } catch (error) {
+          console.error("Error deleting product:", error);
+          showError("Failed to delete product");
+        }
+      }
+    );
   };
 
   const columns = [
@@ -115,19 +106,18 @@ export default function ProductsPage() {
       key: "name",
       header: "Product",
       className: "w-32",
-      render: (value, row) => (
+      render: (value) => (
         <div className="text-sm">
           <div className="font-medium truncate">{value}</div>
-          <div className="text-gray-500 text-xs truncate">{row.unit}</div>
         </div>
       ),
     },
     {
-      key: "rate",
-      header: "Rate",
-      className: "w-20",
+      key: "hsnCode",
+      header: "HSN Code",
+      className: "w-24",
       render: (value) => (
-        <span className="text-sm font-medium">{formatCurrency(value)}</span>
+        <span className="text-sm font-medium text-gray-700">{value}</span>
       ),
     },
     {
@@ -139,43 +129,20 @@ export default function ProductsPage() {
       ),
     },
     {
-      key: "expiryDate",
-      header: "Expiry",
-      className: "w-24",
-      render: (value) => (
-        <span className="text-sm text-gray-600">{formatDate(value)}</span>
-      ),
-    },
-    {
-      key: "companyId",
-      header: "Company",
-      className: "w-28",
-      render: (value, row) => {
-        const company = companies.find((c) => c.companyCode === value);
-        return (
-          <span className="text-sm text-gray-600 truncate">
-            {company ? company.name : "Unknown"}
-          </span>
-        );
-      },
-    },
-    {
       key: "actions",
       header: "Actions",
-      className: "w-32",
+      className: "w-24",
       render: (_, row) => (
-        <div className="flex gap-1">
-          <Link href={`/dashboard/products/${row._id}`}>
-            <Button size="sm" variant="outline" className="text-xs px-2 py-1">
-              View
-            </Button>
-          </Link>
-          <Link href={`/dashboard/products/edit/${row._id}`}>
-            <Button size="sm" variant="outline" className="text-xs px-2 py-1">
-              Edit
-            </Button>
-          </Link>
-        </div>
+        <ActionIcons
+          viewPath={`/dashboard/products/${row._id}`}
+          editPath={`/dashboard/products/edit/${row._id}`}
+          onDelete={() => handleDelete(row._id, row.name)}
+          deleteConfirmMessage={`Are you sure you want to delete "${row.name}"?`}
+          showView={true}
+          showEdit={true}
+          showDelete={true}
+          size="sm"
+        />
       ),
     },
   ];
@@ -195,18 +162,12 @@ export default function ProductsPage() {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="mb-6">
           <Input
             type="text"
-            placeholder="Search by product name or code"
+            placeholder="Search by product name, code, or HSN code"
             value={filters.search}
             onChange={(e) => handleFilterChange("search", e.target.value)}
-          />
-          <Select
-            placeholder="Filter by Company"
-            options={companyOptions}
-            value={filters.company}
-            onChange={(value) => handleFilterChange("company", value)}
           />
         </div>
 
@@ -244,6 +205,20 @@ export default function ProductsPage() {
           </div>
         )}
       </Card>
+
+      {/* Modal */}
+      <Modal
+        isOpen={modalState.isOpen}
+        onClose={hideModal}
+        title={modalState.title}
+        message={modalState.message}
+        type={modalState.type}
+        onConfirm={modalState.onConfirm}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
+        showCancelButton={modalState.showCancelButton}
+        size={modalState.size}
+      />
     </div>
   );
 }

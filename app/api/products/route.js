@@ -10,22 +10,18 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page")) || 1;
     const limit = parseInt(searchParams.get("limit")) || 20;
     const search = searchParams.get("search") || "";
-    const company = searchParams.get("company") || "";
 
     const skip = (page - 1) * limit;
 
     // Build query
-    let query = { isActive: true };
+    let query = {};
 
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
         { productCode: { $regex: search, $options: "i" } },
+        { hsnCode: { $regex: search, $options: "i" } },
       ];
-    }
-
-    if (company) {
-      query.companyId = company;
     }
 
     // Get total count for pagination
@@ -47,8 +43,11 @@ export async function GET(request) {
     });
 
     // Add caching headers
-    response.headers.set('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=59');
-    response.headers.set('X-Response-Time', `${Date.now() - Date.now()}ms`);
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=10, stale-while-revalidate=59"
+    );
+    response.headers.set("X-Response-Time", `${Date.now() - Date.now()}ms`);
 
     return response;
   } catch (error) {
@@ -66,14 +65,7 @@ export async function POST(request) {
     const body = await request.json();
 
     // Validate required fields
-    const requiredFields = [
-      "name",
-      "expiryDate",
-      "rate",
-      "gstRate",
-      "unit",
-      "companyId",
-    ];
+    const requiredFields = ["name", "hsnCode", "gstRate"];
 
     for (const field of requiredFields) {
       if (!body[field]) {
@@ -106,11 +98,8 @@ export async function POST(request) {
     const product = new Product({
       productCode: productCode,
       name: body.name,
-      expiryDate: new Date(body.expiryDate),
-      rate: body.rate,
+      hsnCode: body.hsnCode,
       gstRate: body.gstRate,
-      unit: body.unit,
-      companyId: body.companyId,
     });
 
     await product.save();

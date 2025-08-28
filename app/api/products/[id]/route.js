@@ -30,14 +30,7 @@ export async function PUT(request, { params }) {
     const body = await request.json();
 
     // Validate required fields
-    const requiredFields = [
-      "name",
-      "expiryDate",
-      "rate",
-      "gstRate",
-      "unit",
-      "companyId",
-    ];
+    const requiredFields = ["name", "hsnCode", "gstRate"];
 
     for (const field of requiredFields) {
       if (!body[field]) {
@@ -53,11 +46,8 @@ export async function PUT(request, { params }) {
       params.id,
       {
         name: body.name,
-        expiryDate: new Date(body.expiryDate),
-        rate: body.rate,
+        hsnCode: body.hsnCode,
         gstRate: body.gstRate,
-        unit: body.unit,
-        companyId: body.companyId,
       },
       { new: true }
     );
@@ -82,11 +72,7 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     await connectDB();
-    const product = await Product.findByIdAndUpdate(
-      params.id,
-      { isActive: false },
-      { new: true }
-    );
+    const product = await Product.findByIdAndDelete(params.id);
 
     if (!product) {
       return NextResponse.json(
