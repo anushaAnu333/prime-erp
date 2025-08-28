@@ -1,13 +1,34 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Performance optimizations
-  experimental: {
-    optimizeCss: true,
-    optimizePackageImports: ["@/components/ui"],
-    // Enable server components for better performance
-    serverComponentsExternalPackages: ["mongoose"],
-  },
+  // Development optimizations
+  ...(process.env.NODE_ENV === "development" && {
+    // Faster builds in development
+    experimental: {
+      optimizeCss: false, // Disable in development for faster builds
+      optimizePackageImports: ["@/components/ui"],
+      // Enable server components for better performance
+      serverComponentsExternalPackages: ["mongoose"],
+      // Faster refresh in development
+      turbo: {
+        rules: {
+          "*.svg": {
+            loaders: ["@svgr/webpack"],
+            as: "*.js",
+          },
+        },
+      },
+    },
+  }),
+
+  // Production optimizations
+  ...(process.env.NODE_ENV === "production" && {
+    experimental: {
+      optimizeCss: true,
+      optimizePackageImports: ["@/components/ui"],
+      serverComponentsExternalPackages: ["mongoose"],
+    },
+  }),
 
   // Image optimization
   images: {
@@ -17,21 +38,17 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60,
   },
 
-  // Compression
-  compress: true,
+  // Compression (only in production)
+  ...(process.env.NODE_ENV === "production" && { compress: true }),
 
   // Bundle analyzer (optional for debugging)
   // bundleAnalyzer: process.env.ANALYZE === 'true',
 
-  // Optimize for Vercel
-  output: "standalone",
+  // Optimize for Vercel (only in production)
+  ...(process.env.NODE_ENV === "production" && { output: "standalone" }),
 
   // Performance optimizations
   poweredByHeader: false,
-  
-  // Reduce bundle size (swcMinify is now default in Next.js 15)
-
-  // Optimize fonts (optimizeFonts is now default in Next.js 15)
 };
 
 export default nextConfig;

@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:fast": "NODE_ENV=development NEXT_TELEMETRY_DISABLED=1 next dev --turbopack --port 3000",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "next lint",
     "seed": "node seed-db.js"
   },
   "dependencies": {
