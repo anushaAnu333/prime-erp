@@ -5,12 +5,16 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ["@/components/ui"],
+    // Enable server components for better performance
+    serverComponentsExternalPackages: ["mongoose"],
   },
 
   // Image optimization
   images: {
     domains: [],
     formats: ["image/webp", "image/avif"],
+    // Optimize image loading
+    minimumCacheTTL: 60,
   },
 
   // Compression
@@ -22,6 +26,9 @@ const nextConfig: NextConfig = {
   // Optimize for Vercel
   output: "standalone",
 
+  // Performance optimizations
+  poweredByHeader: false,
+  
   // Reduce bundle size (swcMinify is now default in Next.js 15)
 
   // Optimize fonts (optimizeFonts is now default in Next.js 15)

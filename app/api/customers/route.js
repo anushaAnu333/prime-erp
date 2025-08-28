@@ -39,12 +39,17 @@ export async function GET(request) {
       .skip(skip)
       .limit(limit);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       customers,
       total,
       totalPages,
       currentPage: page,
     });
+
+    // Add caching headers for better performance
+    response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200');
+    
+    return response;
   } catch (error) {
     console.error("Error fetching customers:", error);
     return NextResponse.json(

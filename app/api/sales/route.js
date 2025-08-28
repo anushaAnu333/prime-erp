@@ -124,13 +124,18 @@ export async function GET(request) {
       originalSaleId: sale.originalSaleId,
     }));
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       sales: formattedSales,
       total,
       page,
       totalPages: Math.ceil(total / limit),
       hasMore: page * limit < total,
     });
+
+    // Add caching headers for better performance
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    
+    return response;
   } catch (error) {
     console.error("Error fetching sales:", error);
     return NextResponse.json(
