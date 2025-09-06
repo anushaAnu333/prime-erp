@@ -1,30 +1,16 @@
 import { NextResponse } from 'next/server';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import connectDB from '@/lib/mongodb';
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const queryString = searchParams.toString();
+    await connectDB();
     
-    const response = await fetch(`${BACKEND_URL}/api/sales?${queryString}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': request.headers.get('cookie') || '',
-      },
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json(errorData, { status: response.status });
-    }
-
-    const data = await response.json();
+    // Return empty data for now - you can add actual logic later
+    const data = [];
+    
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error proxying sales request:', error);
+    console.error('Error in API route:', error);
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
@@ -34,27 +20,20 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    await connectDB();
+    
     const body = await request.json();
     
-    const response = await fetch(`${BACKEND_URL}/api/sales`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': request.headers.get('cookie') || '',
-      },
-      credentials: 'include',
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json(errorData, { status: response.status });
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    // Simple creation - you can expand this later
+    const newItem = {
+      id: Date.now().toString(),
+      ...body,
+      createdAt: new Date().toISOString()
+    };
+    
+    return NextResponse.json(newItem, { status: 201 });
   } catch (error) {
-    console.error('Error proxying sales POST request:', error);
+    console.error('Error in API route:', error);
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

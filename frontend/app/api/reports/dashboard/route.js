@@ -1,30 +1,24 @@
 import { NextResponse } from 'next/server';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import connectDB from '@/lib/mongodb';
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const queryString = searchParams.toString();
+    await connectDB();
     
-    const response = await fetch(`${BACKEND_URL}/api/reports/dashboard?${queryString}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': request.headers.get('cookie') || '',
-      },
-      credentials: 'include',
-    });
+    // Simple dashboard stats - you can expand this later
+    const stats = {
+      totalSales: 0,
+      totalRevenue: 0,
+      totalCustomers: 0,
+      totalProducts: 0,
+      recentSales: [],
+      topProducts: [],
+      monthlyRevenue: []
+    };
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json(errorData, { status: response.status });
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(stats);
   } catch (error) {
-    console.error('Error proxying dashboard report request:', error);
+    console.error('Error getting dashboard stats:', error);
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

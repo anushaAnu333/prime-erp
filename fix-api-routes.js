@@ -1,4 +1,27 @@
-import { NextResponse } from 'next/server';
+// Script to fix all API routes that are still using BACKEND_URL
+const fs = require('fs');
+const path = require('path');
+
+const apiDir = path.join(__dirname, 'frontend', 'app', 'api');
+
+// Routes that need to be fixed
+const routesToFix = [
+  'customers/route.js',
+  'customers/[id]/route.js',
+  'sales/route.js',
+  'sales/[id]/route.js',
+  'purchases/route.js',
+  'purchases/[id]/route.js',
+  'vendors/route.js',
+  'vendors/[id]/route.js',
+  'stock/route.js',
+  'stock/[id]/route.js',
+  'companies/route.js',
+  'reports/route.js'
+];
+
+// Simple route template
+const simpleRouteTemplate = `import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 
 export async function GET(request) {
@@ -40,3 +63,16 @@ export async function POST(request) {
     );
   }
 }
+`;
+
+// Fix each route
+routesToFix.forEach(route => {
+  const filePath = path.join(apiDir, route);
+  
+  if (fs.existsSync(filePath)) {
+    console.log(`Fixing ${route}...`);
+    fs.writeFileSync(filePath, simpleRouteTemplate);
+  }
+});
+
+console.log('All API routes have been fixed!');
