@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import jwt from 'jsonwebtoken';
+import connectDB from '@/lib/mongodb';
+import User from '@/lib/models/User';
 
 export async function POST(request) {
   try {
+    await connectDB();
+
     let body;
     try {
       body = await request.json();
@@ -14,46 +17,87 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    
-    // Validate required fields
-    if (!body || !body.email || !body.password) {
+
+    const { email, password, rememberMe } = body;
+
+    // Validate input
+    if (!email || !password) {
       return NextResponse.json(
-        { message: 'Email and password are required' },
+        { message: "Email and password are required" },
         { status: 400 }
       );
     }
-    
-    const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify(body),
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json(errorData, { status: response.status });
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return NextResponse.json(
+        { message: "Invalid email or password" },
+        { status: 401 }
+      );
     }
 
-    const data = await response.json();
-    
-    // Create the response
-    const nextResponse = NextResponse.json(data);
-    
-    // Forward all Set-Cookie headers from the backend
-    response.headers.forEach((value, key) => {
-      if (key.toLowerCase() === 'set-cookie') {
-        nextResponse.headers.set(key, value);
-      }
+    // Check if user is active
+    if (!user.isActive) {
+      return NextResponse.json(
+        {
+          message: "Account is deactivated. Please contact administrator.",
+        },
+        { status: 401 }
+      );
+    }
+
+    // Verify password
+    const isPasswordValid = await user.comparePassword(password);
+
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { message: "Invalid email or password" },
+        { status: 401 }
+      );
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: rememberMe ? "30d" : "7d" }
+    );
+
+    // Create response
+    const response = NextResponse.json({
+      message: "Login successful",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        companyAccess: user.companyAccess,
+        phone: user.phone,
+      },
     });
 
-    return nextResponse;
+    // Set token in HTTP-only cookie
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000, // 30 days or 7 days
+    };
+
+    response.cookies.set("auth-token", token, cookieOptions);
+
+    return response;
   } catch (error) {
-    console.error('Error proxying login request:', error);
+    console.error("Login error:", error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: "Internal server error" },
       { status: 500 }
     );
   }
