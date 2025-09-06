@@ -148,9 +148,33 @@ const startServer = async () => {
       res.status(404).json({ error: "Route not found" });
     });
     
+    // Health check endpoint (required for Cyclic)
+    app.get("/health", (req, res) => {
+      res.status(200).json({ 
+        status: "OK", 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || "development"
+      });
+    });
+
+    // Root endpoint for Cyclic
+    app.get("/", (req, res) => {
+      res.status(200).json({ 
+        message: "Prima ERP Backend API",
+        version: "1.0.0",
+        status: "running",
+        endpoints: {
+          health: "/health",
+          api: "/api",
+          dashboard: "/api/dashboard"
+        }
+      });
+    });
+
     const server = app.listen(PORT, () => {
       console.log(`✅ Backend server running on port ${PORT}`);
-      console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`🌐 Health check: http://localhost:${PORT}/health`);
       console.log(`📡 Server is listening on port ${PORT}`);
     });
 
