@@ -2,11 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "../lib/hooks";
+import { 
+  createProduct, 
+  updateProduct, 
+  fetchProductById,
+  clearError,
+  clearCurrentProduct,
+  selectCurrentProduct,
+  selectProductsLoading,
+  selectProductsError
+} from "../lib/store/slices/productsSlice";
 import Form from "./ui/Form";
 
 export default function ProductForm({ productId = null, onSuccess }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const dispatch = useAppDispatch();
+  
+  // Redux selectors
+  const currentProduct = useAppSelector(selectCurrentProduct);
+  const loading = useAppSelector(selectProductsLoading);
+  const error = useAppSelector(selectProductsError);
+  
   const [initialData, setInitialData] = useState({
     name: "",
     hsnCode: "",
@@ -61,70 +78,56 @@ export default function ProductForm({ productId = null, onSuccess }) {
 
   useEffect(() => {
     if (productId) {
-      fetchProduct();
+      dispatch(fetchProductById(productId));
+    } else {
+      dispatch(clearCurrentProduct());
     }
-  }, [productId]);
+    
+    // Clear any previous errors
+    dispatch(clearError());
+    
+    return () => {
+      dispatch(clearCurrentProduct());
+      dispatch(clearError());
+    };
+  }, [productId, dispatch]);
 
-  const fetchProduct = async () => {
-    try {
-      const response = await fetch(`/api/products/${productId}`);
-      if (response.ok) {
-        const data = await response.json();
-        const product = data.product;
-        setInitialData({
-          name: product.name || "",
-          hsnCode: product.hsnCode || "",
-          gstRate: product.gstRate?.toString() || "5",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching product:", error);
+  useEffect(() => {
+    if (currentProduct) {
+      setInitialData({
+        name: currentProduct.name || "",
+        hsnCode: currentProduct.hsnCode || "",
+        gstRate: currentProduct.gstRate?.toString() || "5",
+      });
     }
-  };
+  }, [currentProduct]);
 
   const handleSubmit = async (formData) => {
-    setLoading(true);
-
-    const url = productId ? `/api/products/${productId}` : "/api/products";
-    const method = productId ? "PUT" : "POST";
-
-    const response = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    try {
+      const productData = {
         ...formData,
         gstRate: parseInt(formData.gstRate),
-      }),
-    });
+      };
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to save product");
+      let result;
+      if (productId) {
+        result = await dispatch(updateProduct({ productId, productData })).unwrap();
+      } else {
+        result = await dispatch(createProduct(productData)).unwrap();
+      }
+
+      return result;
+    } catch (error) {
+      throw new Error(error || "Failed to save product");
     }
-
-    const result = await response.json();
-    setLoading(false);
-
-    return result;
   };
 
   const handleSuccess = (result) => {
     if (onSuccess) {
       onSuccess(result);
     } else {
-      // Reset form for new product
-      if (!productId) {
-        setInitialData({
-          name: "",
-          hsnCode: "",
-          gstRate: "5",
-        });
-      } else {
-        // Redirect to product detail page
-        router.push(`/dashboard/products/${productId}`);
-      }
+      // Always redirect to products list page after success
+      router.push("/dashboard/products");
     }
   };
 
@@ -150,9 +153,7 @@ export default function ProductForm({ productId = null, onSuccess }) {
           ? "Product updated successfully!"
           : "Product created successfully!"
       }
-      redirectPath={productId ? `/dashboard/products/${productId}` : null}
-      backPath="/dashboard/products"
-      backText="Back"
+      redirectPath="/dashboard/products"
     />
   );
 }

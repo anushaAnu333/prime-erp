@@ -62,6 +62,30 @@ export const deletePurchase = createAsyncThunk(
   }
 );
 
+export const createPurchaseReturn = createAsyncThunk(
+  "purchases/createReturn",
+  async (returnData, { rejectWithValue }) => {
+    try {
+      const response = await fetch('/api/purchases/returns', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(returnData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create purchase return');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const initialState = {
   purchases: [],
   currentPurchase: null,
@@ -182,10 +206,36 @@ const purchasesSlice = createSlice({
       .addCase(deletePurchase.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      
+      // Create Purchase Return
+      .addCase(createPurchaseReturn.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createPurchaseReturn.fulfilled, (state, action) => {
+        state.loading = false;
+        state.purchases.unshift(action.payload.purchase);
+        state.total += 1;
+        state.error = null;
+      })
+      .addCase(createPurchaseReturn.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
 export const { clearError, clearCurrentPurchase, setCurrentPage } =
   purchasesSlice.actions;
+
+// Selectors
+export const selectPurchases = (state) => state.purchases.purchases;
+export const selectCurrentPurchase = (state) => state.purchases.currentPurchase;
+export const selectPurchasesLoading = (state) => state.purchases.loading;
+export const selectPurchasesError = (state) => state.purchases.error;
+export const selectPurchasesTotal = (state) => state.purchases.total;
+export const selectPurchasesTotalPages = (state) => state.purchases.totalPages;
+export const selectPurchasesCurrentPage = (state) => state.purchases.currentPage;
+
 export default purchasesSlice.reducer;

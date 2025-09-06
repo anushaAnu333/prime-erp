@@ -67,7 +67,6 @@ const LoginForm = () => {
 
       // Redirect to dashboard on successful login
       router.push("/dashboard");
-      router.refresh();
     } catch (error) {
       // Error is handled by Redux slice
       console.error("Login failed:", error);

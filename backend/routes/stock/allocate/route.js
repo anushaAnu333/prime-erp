@@ -1,41 +1,38 @@
-import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import Stock from "@/models/Stock";
+const express = require("express");
+const router = express.Router();
+const mongoose = require("mongoose");
+
+// Import the Stock model from the models directory
+const Stock = require('../../models/Stock');
 
 // POST /api/stock/allocate - Allocate stock to agents
-export async function POST(request) {
+router.post("/", async (req, res) => {
   try {
-    await connectDB();
-    const body = await request.json();
+    const body = req.body;
 
     const { stockId, allocations } = body;
 
     if (!stockId || !allocations || !Array.isArray(allocations)) {
-      return NextResponse.json(
-        { message: "Stock ID and allocations array are required" },
-        { status: 400 }
-      );
+      return res.status(400).json({
+        message: "Stock ID and allocations array are required"
+      });
     }
 
     const stock = await Stock.findById(stockId);
 
     if (!stock) {
-      return NextResponse.json(
-        { message: "Stock not found" },
-        { status: 404 }
-      );
+      return res.status(404).json({
+        message: "Stock not found"
+      });
     }
 
     // Validate total allocation doesn't exceed available stock
     const totalAllocation = allocations.reduce((sum, alloc) => sum + alloc.quantity, 0);
     
     if (totalAllocation > stock.closingStock) {
-      return NextResponse.json(
-        { 
-          message: `Insufficient stock. Available: ${stock.closingStock} ${stock.unit}, Requested: ${totalAllocation} ${stock.unit}` 
-        },
-        { status: 400 }
-      );
+      return res.status(400).json({
+        message: `Insufficient stock. Available: ${stock.closingStock} ${stock.unit}, Requested: ${totalAllocation} ${stock.unit}`
+      });
     }
 
     // Process each allocation
@@ -69,7 +66,7 @@ export async function POST(request) {
     // Refresh stock data
     await stock.save();
 
-    return NextResponse.json({
+    return res.json({
       message: "Stock allocation completed",
       results,
       stock: {
@@ -82,36 +79,29 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Error allocating stock:", error);
-    return NextResponse.json(
-      { message: "Failed to allocate stock" },
-      { status: 500 }
-    );
+    return res.status(500).json({
+      message: "Failed to allocate stock"
+    });
   }
-}
+});
 
 // GET /api/stock/allocate - Get agent stock allocations
-export async function GET(request) {
+router.get("/", async (req, res) => {
   try {
-    await connectDB();
-
-    const { searchParams } = new URL(request.url);
-    const stockId = searchParams.get("stockId");
-    const agentId = searchParams.get("agentId");
+    const { stockId, agentId } = req.query;
 
     if (!stockId) {
-      return NextResponse.json(
-        { message: "Stock ID is required" },
-        { status: 400 }
-      );
+      return res.status(400).json({
+        message: "Stock ID is required"
+      });
     }
 
     const stock = await Stock.findById(stockId);
 
     if (!stock) {
-      return NextResponse.json(
-        { message: "Stock not found" },
-        { status: 404 }
-      );
+      return res.status(404).json({
+        message: "Stock not found"
+      });
     }
 
     let agentStocks = stock.agentStocks;
@@ -121,7 +111,7 @@ export async function GET(request) {
       agentStocks = agentStocks.filter(as => as.agentId.toString() === agentId);
     }
 
-    return NextResponse.json({
+    return res.json({
       stock: {
         id: stock._id,
         product: stock.product,
@@ -135,9 +125,10 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error("Error fetching agent allocations:", error);
-    return NextResponse.json(
-      { message: "Failed to fetch agent allocations" },
-      { status: 500 }
-    );
+    return res.status(500).json({
+      message: "Failed to fetch agent allocations"
+    });
   }
-}
+});
+
+module.exports = router;

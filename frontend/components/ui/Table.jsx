@@ -13,6 +13,7 @@ export const ActionIcons = ({
   showEdit = true,
   showDelete = true,
   size = "sm",
+  skipConfirm = false, // New prop to skip built-in confirmation
 }) => {
   const iconSize = size === "sm" ? "w-4 h-4" : "w-5 h-5";
   const buttonSize = size === "sm" ? "p-1" : "p-1.5";
@@ -66,7 +67,9 @@ export const ActionIcons = ({
       {showDelete && onDelete && (
         <button
           onClick={() => {
-            if (confirm(deleteConfirmMessage)) {
+            if (skipConfirm) {
+              onDelete();
+            } else if (confirm(deleteConfirmMessage)) {
               onDelete();
             }
           }}

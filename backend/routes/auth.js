@@ -1,9 +1,10 @@
 const express = require("express");
-const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const { connectDB } = require("../lib/mongodb");
+const User = require("../models/User.js");
+const { connectDB } = require("../lib/mongodb.js");
+
+const router = express.Router();
 
 // Login route
 router.post("/login", async (req, res) => {

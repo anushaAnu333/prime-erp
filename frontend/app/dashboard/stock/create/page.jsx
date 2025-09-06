@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAppDispatch } from "@/lib/hooks";
+import { createStock } from "@/lib/store/slices/stockSlice";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -9,6 +11,7 @@ import Select from "@/components/ui/Select";
 
 export default function CreateStock() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
@@ -87,32 +90,21 @@ export default function CreateStock() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/stock", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          product: formData.product,
-          companyId: formData.companyId,
-          openingStock: parseInt(formData.openingStock),
-          unit: formData.unit,
-          expiryDate: formData.expiryDate,
-          minimumStock: parseInt(formData.minimumStock) || 10,
-        }),
-      });
+      const stockData = {
+        product: formData.product,
+        companyId: formData.companyId,
+        openingStock: parseInt(formData.openingStock),
+        unit: formData.unit,
+        expiryDate: formData.expiryDate,
+        minimumStock: parseInt(formData.minimumStock) || 10,
+      };
 
-      if (response.ok) {
-        const result = await response.json();
-        alert("Stock created successfully!");
-        router.push("/dashboard/stock");
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Failed to create stock");
-      }
+      await dispatch(createStock(stockData)).unwrap();
+      alert("Stock created successfully!");
+      router.push("/dashboard/stock");
     } catch (error) {
       console.error("Error creating stock:", error);
-      setError("Failed to create stock");
+      setError(error || "Failed to create stock");
     } finally {
       setLoading(false);
     }

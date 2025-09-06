@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import Card from "@/components/ui/Card";
-import { useAppDispatch } from "@/lib/hooks";
-import { useDashboardData } from "@/lib/hooks";
-import { fetchDashboardData } from "@/lib/store/slices/dashboardSlice";
+import { useAppDispatch } from "../lib/hooks";
+import { useDashboardData } from "../lib/hooks";
+import { fetchDashboardData } from "../lib/store/slices/dashboardSlice";
 import {
   LineChart,
   Line,
@@ -22,8 +22,7 @@ import {
 
 const DashboardClient = ({ user }) => {
   const dispatch = useAppDispatch();
-  const stats = useDashboardData();
-  const { loading, error } = useDashboardData();
+  const { loading, error, ...stats } = useDashboardData();
 
   useEffect(() => {
     dispatch(fetchDashboardData());

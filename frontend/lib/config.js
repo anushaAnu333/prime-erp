@@ -2,52 +2,52 @@
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-// API endpoints - Use relative URLs for Next.js API proxy
+// API endpoints - Use full URLs to backend server
 export const API_ENDPOINTS = {
   // Auth
-  LOGIN: `/api/auth/login`,
-  LOGOUT: `/api/auth/logout`,
-  ME: `/api/auth/me`,
+  LOGIN: `${API_BASE_URL}/api/auth/login`,
+  LOGOUT: `${API_BASE_URL}/api/auth/logout`,
+  ME: `${API_BASE_URL}/api/auth/me`,
 
   // Sales
-  SALES: `/api/sales`,
-  SALE_BY_ID: (id) => `/api/sales/${id}`,
+  SALES: `${API_BASE_URL}/api/sales`,
+  SALE_BY_ID: (id) => `${API_BASE_URL}/api/sales/${id}`,
 
   // Customers
-  CUSTOMERS: `/api/customers`,
-  CUSTOMER_BY_ID: (id) => `/api/customers/${id}`,
+  CUSTOMERS: `${API_BASE_URL}/api/customers`,
+  CUSTOMER_BY_ID: (id) => `${API_BASE_URL}/api/customers/${id}`,
 
   // Products
-  PRODUCTS: `/api/products`,
-  PRODUCT_BY_ID: (id) => `/api/products/${id}`,
+  PRODUCTS: `${API_BASE_URL}/api/products`,
+  PRODUCT_BY_ID: (id) => `${API_BASE_URL}/api/products/${id}`,
 
   // Purchases
-  PURCHASES: `/api/purchases`,
-  PURCHASE_BY_ID: (id) => `/api/purchases/${id}`,
+  PURCHASES: `${API_BASE_URL}/api/purchases`,
+  PURCHASE_BY_ID: (id) => `${API_BASE_URL}/api/purchases/${id}`,
 
   // Vendors
-  VENDORS: `/api/vendors`,
-  VENDOR_BY_ID: (id) => `/api/vendors/${id}`,
+  VENDORS: `${API_BASE_URL}/api/vendors`,
+  VENDOR_BY_ID: (id) => `${API_BASE_URL}/api/vendors/${id}`,
 
   // Stock
-  STOCK: `/api/stock`,
-  STOCK_BY_ID: (id) => `/api/stock/${id}`,
+  STOCK: `${API_BASE_URL}/api/stock`,
+  STOCK_BY_ID: (id) => `${API_BASE_URL}/api/stock/${id}`,
 
   // Payments
-  PAYMENTS: `/api/payments`,
-  PAYMENT_BY_ID: (id) => `/api/payments/${id}`,
+  PAYMENTS: `${API_BASE_URL}/api/payments`,
+  PAYMENT_BY_ID: (id) => `${API_BASE_URL}/api/payments/${id}`,
 
   // Dashboard
-  DASHBOARD: `/api/dashboard`,
-  DASHBOARD_STATS: `/api/dashboard/stats`,
+  DASHBOARD: `${API_BASE_URL}/api/dashboard`,
+  DASHBOARD_STATS: `${API_BASE_URL}/api/dashboard/stats`,
 
   // Users
-  USERS: `/api/users`,
-  USER_BY_ID: (id) => `/api/users/${id}`,
+  USERS: `${API_BASE_URL}/api/users`,
+  USER_BY_ID: (id) => `${API_BASE_URL}/api/users/${id}`,
 
   // Companies
-  COMPANIES: `/api/companies`,
-  COMPANY_BY_ID: (id) => `/api/companies/${id}`,
+  COMPANIES: `${API_BASE_URL}/api/companies`,
+  COMPANY_BY_ID: (id) => `${API_BASE_URL}/api/companies/${id}`,
 };
 
 // Environment configuration

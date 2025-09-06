@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const stockMovementSchema = new mongoose.Schema(
   {
@@ -24,8 +24,7 @@ const stockMovementSchema = new mongoose.Schema(
       required: true,
     },
     referenceId: {
-      type: mongoose.Schema.Types.ObjectId,
-      refPath: "referenceModel",
+      type: String,
     },
     referenceModel: {
       type: String,
@@ -47,8 +46,7 @@ const stockMovementSchema = new mongoose.Schema(
 
 const agentStockSchema = new mongoose.Schema({
   agentId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    type: String,
     required: true,
   },
   agentName: {
@@ -86,20 +84,7 @@ const stockSchema = new mongoose.Schema(
     product: {
       type: String,
       required: [true, "Product is required"],
-      enum: [
-        "dosa",
-        "idli",
-        "chapati",
-        "parata",
-        "paneer",
-        "green peas",
-        "Dosa",
-        "Idli",
-        "Chapati",
-        "Parata",
-        "Paneer",
-        "Green peas",
-      ],
+      // Removed enum to allow dynamic products from purchases/sales
     },
 
     // Stock Formula Components
@@ -201,9 +186,8 @@ stockSchema.pre("save", function (next) {
   // Calculate closing stock using the formula
   this.closingStock = this.openingStock + this.totalPurchases - this.totalSales;
 
-  // Calculate stock available using the flow formula
-  this.stockAvailable =
-    this.stockGiven - this.stockDelivered + this.salesReturns;
+  // Calculate stock available (what's left in main warehouse after giving to agents)
+  this.stockAvailable = this.closingStock - this.stockGiven;
 
   // Check for low stock
   this.isLowStock = this.closingStock <= this.minimumStock;
@@ -242,10 +226,10 @@ stockSchema.methods.addMovement = function (movement) {
 
   // Recalculate closing stock
   this.closingStock = this.openingStock + this.totalPurchases - this.totalSales;
-  this.stockAvailable =
-    this.stockGiven - this.stockDelivered + this.salesReturns;
+  this.stockAvailable = this.closingStock - this.stockGiven;
 
-  return this.save();
+  // Don't save here - let the calling method handle the save
+  return this;
 };
 
 // Method to allocate stock to agent
@@ -256,7 +240,7 @@ stockSchema.methods.allocateToAgent = function (agentId, agentName, quantity) {
 
   // Find or create agent stock entry
   let agentStock = this.agentStocks.find(
-    (as) => as.agentId.toString() === agentId.toString()
+    (as) => as.agentId === agentId
   );
 
   if (!agentStock) {
@@ -278,8 +262,7 @@ stockSchema.methods.allocateToAgent = function (agentId, agentName, quantity) {
 
   // Update overall stock
   this.stockGiven += quantity;
-  this.stockAvailable =
-    this.stockGiven - this.stockDelivered + this.salesReturns;
+  this.stockAvailable = this.closingStock - this.stockGiven;
 
   // Add movement record
   this.addMovement({
@@ -287,10 +270,10 @@ stockSchema.methods.allocateToAgent = function (agentId, agentName, quantity) {
     quantity,
     reference: agentName,
     referenceId: agentId,
-    referenceModel: "User",
     notes: `Allocated ${quantity} ${this.unit} to ${agentName}`,
   });
 
+  // Save the document once after all modifications
   return this.save();
 };
 
@@ -300,7 +283,7 @@ stockSchema.methods.updateAgentDelivery = function (
   deliveredQuantity
 ) {
   const agentStock = this.agentStocks.find(
-    (as) => as.agentId.toString() === agentId.toString()
+    (as) => as.agentId === agentId
   );
 
   if (!agentStock) {
@@ -318,8 +301,7 @@ stockSchema.methods.updateAgentDelivery = function (
 
   // Update overall stock
   this.stockDelivered += deliveredQuantity;
-  this.stockAvailable =
-    this.stockGiven - this.stockDelivered + this.salesReturns;
+  this.stockAvailable = this.closingStock - this.stockGiven;
 
   return this.save();
 };
@@ -327,7 +309,7 @@ stockSchema.methods.updateAgentDelivery = function (
 // Method to handle sales return
 stockSchema.methods.handleSalesReturn = function (agentId, returnQuantity) {
   const agentStock = this.agentStocks.find(
-    (as) => as.agentId.toString() === agentId.toString()
+    (as) => as.agentId === agentId
   );
 
   if (!agentStock) {
@@ -341,8 +323,7 @@ stockSchema.methods.handleSalesReturn = function (agentId, returnQuantity) {
 
   // Update overall stock
   this.salesReturns += returnQuantity;
-  this.stockAvailable =
-    this.stockGiven - this.stockDelivered + this.salesReturns;
+  this.stockAvailable = this.closingStock - this.stockGiven;
 
   // Add movement record
   this.addMovement({
@@ -357,4 +338,4 @@ stockSchema.methods.handleSalesReturn = function (agentId, returnQuantity) {
 
 const Stock = mongoose.models.Stock || mongoose.model("Stock", stockSchema);
 
-export default Stock;
+module.exports = Stock;

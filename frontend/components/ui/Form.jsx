@@ -7,7 +7,6 @@ import Select from "./Select";
 import Button from "./Button";
 import Modal from "./Modal";
 import { useModal } from "../../hooks/useModal";
-import Link from "next/link";
 
 const Form = ({
   title,
@@ -30,8 +29,6 @@ const Form = ({
   onSuccess = null,
   size = "md",
   children,
-  backPath,
-  backText = "Back",
   ...props
 }) => {
   const [formData, setFormData] = useState(initialData);
@@ -254,28 +251,6 @@ const Form = ({
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className={`w-full max-w-md ${className}`}>
-        {/* Back Button */}
-        {backPath && (
-          <div className="mb-4">
-            <Link
-              href={backPath}
-              className="inline-flex items-center text-gray-600 hover:text-gray-800 transition-colors">
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                />
-              </svg>
-              {backText}
-            </Link>
-          </div>
-        )}
 
         <Card className="p-6">
           <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">

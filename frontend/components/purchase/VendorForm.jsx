@@ -15,14 +15,8 @@ export default function VendorForm({ vendorId = null, onSuccess }) {
     email: "",
     gstNumber: "",
     paymentTerms: "30 days",
-    companyId: "PRIMA-SM",
   });
 
-  const [companies, setCompanies] = useState([
-    { value: "PRIMA-SM", label: "PRIMA Sales & Marketing" },
-    { value: "PRIMA-FT", label: "PRIMA Food Trading" },
-    { value: "PRIMA-EX", label: "PRIMA Export" },
-  ]);
 
   const [paymentTerms, setPaymentTerms] = useState([
     { value: "Cash", label: "Cash" },
@@ -55,7 +49,6 @@ export default function VendorForm({ vendorId = null, onSuccess }) {
           email: vendor.email || "",
           gstNumber: vendor.gstNumber || "",
           paymentTerms: vendor.paymentTerms || "30 days",
-          companyId: vendor.companyId || "PRIMA-SM",
         });
       }
     } catch (error) {
@@ -159,7 +152,6 @@ export default function VendorForm({ vendorId = null, onSuccess }) {
             email: "",
             gstNumber: "",
             paymentTerms: "30 days",
-            companyId: "PRIMA-SM",
           });
         }
       } else {
@@ -259,8 +251,8 @@ export default function VendorForm({ vendorId = null, onSuccess }) {
             </div>
           </div>
 
-          {/* GST and Company */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* GST Number */}
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 GST Number
@@ -269,17 +261,6 @@ export default function VendorForm({ vendorId = null, onSuccess }) {
                 value={formData.gstNumber}
                 onChange={(e) => handleInputChange("gstNumber", e.target.value)}
                 placeholder="Enter GST number"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Company
-              </label>
-              <Select
-                options={companies}
-                value={formData.companyId}
-                onChange={(value) => handleInputChange("companyId", value)}
                 required
               />
             </div>
@@ -324,7 +305,6 @@ export default function VendorForm({ vendorId = null, onSuccess }) {
                   email: "",
                   gstNumber: "",
                   paymentTerms: "30 days",
-                  companyId: "PRIMA-SM",
                 });
               }}
               className="px-6 py-3">

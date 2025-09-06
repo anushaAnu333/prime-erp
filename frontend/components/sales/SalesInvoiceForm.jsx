@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSelector, useDispatch } from "react-redux";
 import CustomerSelect from "./CustomerSelect";
 import ProductSelect from "./ProductSelect";
+import SaleReturnInfo from "./SaleReturnInfo";
 import { calculateItemTotals } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/utils";
 import Button from "@/components/ui/Button";
@@ -11,6 +13,13 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Card from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
+import {
+  createSale,
+  updateSale,
+  selectSalesLoading,
+  selectSalesError,
+  clearError,
+} from "@/lib/store/slices/salesSlice";
 
 const SalesInvoiceForm = ({
   initialData = null,
@@ -19,8 +28,13 @@ const SalesInvoiceForm = ({
   onCancel = null,
 }) => {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const dispatch = useDispatch();
+  
+  // Redux state
+  const loading = useSelector(selectSalesLoading);
+  const error = useSelector(selectSalesError);
+  
+  // Local state
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState(null);
 
@@ -157,7 +171,7 @@ const SalesInvoiceForm = ({
     const updatedItems = [...items];
     updatedItems[index] = {
       ...updatedItems[index],
-      [field]: value,
+      [field]: value ?? "",
     };
 
     // Recalculate item totals if qty or rate changed
@@ -281,8 +295,7 @@ const SalesInvoiceForm = ({
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    dispatch(clearError());
 
     try {
       const payload = {
@@ -301,37 +314,23 @@ const SalesInvoiceForm = ({
         notes: formData.notes,
       };
 
-      const url =
-        mode === "edit" ? `/api/sales/${initialData.id}` : "/api/sales";
-      const method = mode === "edit" ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-
-        if (onSave) {
-          onSave(result);
-        } else {
-          setSuccessData(result);
-          setShowSuccessModal(true);
-          resetForm();
-        }
+      let result;
+      if (mode === "edit") {
+        result = await dispatch(updateSale({ id: initialData.id, data: payload })).unwrap();
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Failed to save invoice");
+        result = await dispatch(createSale(payload)).unwrap();
+      }
+
+      if (onSave) {
+        onSave(result);
+      } else {
+        setSuccessData(result);
+        setShowSuccessModal(true);
+        resetForm();
       }
     } catch (error) {
       console.error("Error saving invoice:", error);
-      setError("Failed to save invoice");
-    } finally {
-      setLoading(false);
+      // Error is already set in Redux state
     }
   };
 
@@ -339,9 +338,21 @@ const SalesInvoiceForm = ({
     <div className="max-w-4xl mx-auto p-6">
       <Card className="p-8">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold text-gray-800">
-            {mode === "create" ? "Create Sales Invoice" : "Edit Sales Invoice"}
-          </h2>
+          <div>
+            <h2 className="text-3xl font-bold text-gray-800">
+              {mode === "create" ? "Create Sales Invoice" : "Edit Sales Invoice"}
+            </h2>
+            {mode === "edit" && initialData && (
+              <div className="mt-2 flex items-center gap-4">
+                <span className="text-sm text-gray-600">
+                  Invoice: {initialData.invoiceNumber || initialData.invoiceNo}
+                </span>
+                <span className="text-sm text-gray-600">
+                  Total: {formatCurrency(initialData.total || calculations.total)}
+                </span>
+              </div>
+            )}
+          </div>
           <div className="text-sm text-gray-500">
             {new Date().toLocaleDateString()}
           </div>
@@ -650,6 +661,16 @@ const SalesInvoiceForm = ({
           </div>
         </form>
       </Card>
+
+      {/* Return Information - Only show in edit mode */}
+      {mode === "edit" && initialData && initialData.id && (
+        <div className="mt-8">
+          <SaleReturnInfo 
+            saleId={initialData.id} 
+            saleData={initialData}
+          />
+        </div>
+      )}
 
       {/* Success Modal */}
       <Modal

@@ -52,11 +52,67 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     await connectDB();
-    const vendor = new Vendor(req.body);
+    
+    const { vendorName, contactPerson, address, phone, email, gstNumber, paymentTerms = "30 days" } = req.body;
+    
+    // Validate required fields
+    if (!vendorName || !contactPerson || !address || !phone || !gstNumber) {
+      return res.status(400).json({ 
+        message: "Vendor name, contact person, address, phone, and GST number are required" 
+      });
+    }
+    
+    // Generate vendor code
+    const generateVendorCode = () => {
+      const timestamp = Date.now().toString().slice(-6);
+      const random = Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0");
+      return `VEND${timestamp}${random}`;
+    };
+
+    let vendorCode = generateVendorCode();
+
+    // Ensure vendor code is unique
+    let existingVendor = await Vendor.findOne({ vendorCode });
+    while (existingVendor) {
+      vendorCode = generateVendorCode();
+      existingVendor = await Vendor.findOne({ vendorCode });
+    }
+    
+    // Create vendor with all required fields
+    const vendorData = {
+      vendorCode,
+      vendorName,
+      contactPerson,
+      address,
+      phone,
+      email: email || "",
+      gstNumber: gstNumber.toUpperCase(),
+      paymentTerms,
+      currentBalance: 0,
+      isActive: true
+    };
+    
+    const vendor = new Vendor(vendorData);
     await vendor.save();
-    res.status(201).json({ vendor });
+    
+    res.status(201).json({ 
+      success: true,
+      vendor 
+    });
   } catch (error) {
     console.error("Error creating vendor:", error);
+    
+    // Return more specific error messages
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        message: "Validation failed", 
+        errors 
+      });
+    }
+    
     res.status(500).json({ message: "Internal server error" });
   }
 });

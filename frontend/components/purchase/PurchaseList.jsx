@@ -291,33 +291,49 @@ export default function PurchaseList() {
         if (filters.type === "Purchase Return") {
           // For returns, show original purchase info instead
           if (row.originalPurchase) {
+            const originalInvoice = row.originalPurchase.supplierInvoiceNumber || 
+                                  row.originalPurchase.invoiceNumber || 
+                                  row.originalPurchase.purchaseNumber || 
+                                  "Not Available";
             return (
               <div className="text-sm">
                 <div className="font-medium text-gray-600">
-                  Original Purchase
+                  {originalInvoice}
                 </div>
                 <div className="text-gray-500 text-xs">
-                  {formatDate(row.originalPurchase.date)}
+                  Original: {formatDate(row.originalPurchase.date)}
                 </div>
               </div>
             );
           }
-          return "N/A";
+          return (
+            <span className="text-gray-500 text-sm">Not Available</span>
+          );
         } else {
-          // For purchases, show supplier invoice info
-          if (row.supplierInvoiceNumber) {
+          // For purchases, show supplier invoice info with fallbacks
+          const supplierInvoice = row.supplierInvoiceNumber || 
+                                row.invoiceNumber || 
+                                row.supplierInvoice || 
+                                row.vendorInvoiceNumber ||
+                                null;
+                                
+          if (supplierInvoice) {
             return (
               <div className="text-sm">
-                <div className="font-medium">{row.supplierInvoiceNumber}</div>
+                <div className="font-medium">{supplierInvoice}</div>
                 <div className="text-gray-500 text-xs">
                   {row.supplierInvoiceDate
                     ? formatDate(row.supplierInvoiceDate)
+                    : row.invoiceDate 
+                    ? formatDate(row.invoiceDate)
                     : ""}
                 </div>
               </div>
             );
           }
-          return "N/A";
+          return (
+            <span className="text-gray-500 text-sm">Not Available</span>
+          );
         }
       },
     },

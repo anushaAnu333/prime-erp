@@ -151,18 +151,6 @@ export default function CustomerList() {
       ),
     },
     {
-      key: "companyId",
-      header: "Company",
-      render: (value, row) => {
-        const company = companies.find((c) => c.companyCode === value);
-        return (
-          <span className="text-sm text-gray-600 truncate">
-            {company ? company.name : "Not Assigned"}
-          </span>
-        );
-      },
-    },
-    {
       key: "createdAt",
       header: "Created",
       render: (value) => formatDate(value),

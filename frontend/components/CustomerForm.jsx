@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { createCustomer, clearError } from "@/lib/store/slices/customersSlice";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
 import Card from "@/components/ui/Card";
 
 const CustomerForm = () => {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.customers);
   const [success, setSuccess] = useState("");
 
   const [formData, setFormData] = useState({
@@ -18,34 +19,10 @@ const CustomerForm = () => {
     address: "",
     shopName: "",
     phoneNumber: "",
-    companyId: "",
+    email: "",
+    currentBalance: 0,
   });
 
-  const [companies, setCompanies] = useState([]);
-  const [loadingCompanies, setLoadingCompanies] = useState(true);
-
-  // Fetch companies on component mount
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const response = await fetch("/api/companies");
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Fetched companies:", data.companies);
-          console.log("Companies count:", data.companies?.length);
-          setCompanies(data.companies || []);
-        } else {
-          console.error("Failed to fetch companies");
-        }
-      } catch (error) {
-        console.error("Error fetching companies:", error);
-      } finally {
-        setLoadingCompanies(false);
-      }
-    };
-
-    fetchCompanies();
-  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
@@ -56,43 +33,27 @@ const CustomerForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    dispatch(clearError());
     setSuccess("");
 
+    const payload = {
+      ...formData,
+      currentBalance: parseFloat(formData.currentBalance) || 0,
+    };
+
     try {
-      const payload = {
-        ...formData,
+      const result = await dispatch(createCustomer(payload)).unwrap();
+      setSuccess("Customer added successfully!");
+      setFormData({
+        name: "",
+        address: "",
+        shopName: "",
+        phoneNumber: "",
+        email: "",
         currentBalance: 0,
-        companyId: formData.companyId || null,
-      };
-
-      const response = await fetch("/api/customers", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
       });
-
-      if (response.ok) {
-        setSuccess("Customer added successfully!");
-        setFormData({
-          name: "",
-          address: "",
-          shopName: "",
-          phoneNumber: "",
-          companyId: "",
-        });
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Failed to add customer");
-      }
     } catch (error) {
       console.error("Error adding customer:", error);
-      setError("Failed to add customer");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -160,28 +121,30 @@ const CustomerForm = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Company Assignment (Optional)
+                Email
               </label>
-              <Select
-                options={[
-                  {
-                    value: "",
-                    label: loadingCompanies
-                      ? "Loading companies..."
-                      : "Select company (optional)",
-                  },
-                  ...companies.map((company) => ({
-                    value: company.companyCode,
-                    label: `${company.name} - ${company.companyCode}`,
-                  })),
-                ]}
-                value={formData.companyId}
-                onChange={(value) => {
-                  console.log("Selected company:", value);
-                  handleInputChange("companyId", value);
-                }}
-                disabled={loadingCompanies}
-                placeholder="Select company (optional)"
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="Enter email address"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Current Balance
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.currentBalance}
+                onChange={(e) =>
+                  handleInputChange("currentBalance", e.target.value)
+                }
+                placeholder="Enter current balance"
               />
             </div>
           </div>
@@ -215,7 +178,8 @@ const CustomerForm = () => {
                   address: "",
                   shopName: "",
                   phoneNumber: "",
-                  companyId: "",
+                  email: "",
+                  currentBalance: 0,
                 });
               }}
               className="px-6 py-3">

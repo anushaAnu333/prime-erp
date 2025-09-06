@@ -1,35 +1,5 @@
 {
-  "name": "prima-erp-monorepo",
-  "version": "0.1.0",
-  "private": true,
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
-  "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run dev",
-    "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "cd frontend && npm run build",
-    "build:backend": "cd backend && npm run build",
-    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
-    "start:frontend": "cd frontend && npm run start",
-    "start:backend": "cd backend && npm run start",
-    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
-    "lint": "npm run lint:frontend && npm run lint:backend",
-    "lint:frontend": "cd frontend && npm run lint",
-    "lint:backend": "cd backend && npm run lint",
-    "clean": "rm -rf node_modules frontend/node_modules backend/node_modules frontend/.next backend/.next",
-    "optimize": "npm run optimize:frontend && npm run optimize:backend",
-    "optimize:frontend": "cd frontend && npm run optimize",
-    "optimize:backend": "cd backend && npm run optimize"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+  "dependencies": {
+    "node-fetch": "^3.3.2"
   }
 }

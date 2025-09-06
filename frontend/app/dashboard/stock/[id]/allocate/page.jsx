@@ -19,10 +19,10 @@ export default function StockAllocation() {
 
   // Sample delivery agents (in real app, fetch from API)
   const deliveryAgents = [
-    { id: "agent1", name: "Amit Singh", company: "PRIMA-SM" },
-    { id: "agent2", name: "Vikram Patel", company: "PRIMA-SM" },
-    { id: "agent3", name: "Rajesh Kumar", company: "PRIMA-FT" },
-    { id: "agent4", name: "Suresh Sharma", company: "PRIMA-FT" },
+    { id: "agent1", name: "Amit Singh" },
+    { id: "agent2", name: "Vikram Patel" },
+    { id: "agent3", name: "Rajesh Kumar" },
+    { id: "agent4", name: "Suresh Sharma" },
   ];
 
   useEffect(() => {
@@ -36,14 +36,11 @@ export default function StockAllocation() {
         const data = await response.json();
         setStock(data.stock);
         
-        // Filter agents by company
-        const companyAgents = deliveryAgents.filter(
-          agent => agent.company === data.stock.companyId
-        );
-        setAgents(companyAgents);
+        // Set all agents (no company filtering needed)
+        setAgents(deliveryAgents);
         
         // Initialize allocations
-        setAllocations(companyAgents.map(agent => ({
+        setAllocations(deliveryAgents.map(agent => ({
           agentId: agent.id,
           agentName: agent.name,
           quantity: 0,
@@ -67,17 +64,20 @@ export default function StockAllocation() {
   };
 
   const calculateTotalAllocation = () => {
-    return allocations.reduce((sum, alloc) => sum + (parseFloat(alloc.quantity) || 0), 0);
+    return allocations.reduce((sum, alloc) => {
+      const quantity = parseFloat(alloc.quantity) || 0;
+      return sum + quantity;
+    }, 0);
   };
 
   const getRemainingStock = () => {
     if (!stock) return 0;
-    return stock.closingStock - calculateTotalAllocation();
+    return stock.stockAvailable - calculateTotalAllocation();
   };
 
   const isAllocationValid = () => {
     const total = calculateTotalAllocation();
-    return total <= stock?.closingStock && total > 0;
+    return total <= stock?.stockAvailable && total > 0;
   };
 
   const handleSubmit = async () => {
@@ -124,7 +124,7 @@ export default function StockAllocation() {
     
     switch (preset) {
       case "equal":
-        const equalAmount = Math.floor(stock.closingStock / agents.length);
+        const equalAmount = Math.floor(stock.stockAvailable / agents.length);
         newAllocations = agents.map(agent => ({
           agentId: agent.id,
           agentName: agent.name,
@@ -138,13 +138,13 @@ export default function StockAllocation() {
         newAllocations = agents.map((agent, index) => ({
           agentId: agent.id,
           agentName: agent.name,
-          quantity: pattern[index] || Math.floor(stock.closingStock / agents.length),
+          quantity: pattern[index] || Math.floor(stock.stockAvailable / agents.length),
         }));
         break;
       
       case "proportional":
         // Allocate based on agent performance (example)
-        const total = stock.closingStock;
+        const total = stock.stockAvailable;
         const proportions = [0.2, 0.3, 0.25, 0.25]; // 20%, 30%, 25%, 25%
         newAllocations = agents.map((agent, index) => ({
           agentId: agent.id,
@@ -195,26 +195,22 @@ export default function StockAllocation() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Allocate Stock to Agents</h1>
         <p className="text-gray-600">
-          Allocate stock from {stock.product} ({stock.companyId}) to delivery agents
+          Allocate stock from {stock.product} to delivery agents
         </p>
       </div>
 
       {/* Stock Information */}
       <Card className="mb-6 p-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Stock Information</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Product</label>
             <p className="text-lg font-semibold capitalize">{stock.product}</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Company</label>
-            <p className="text-lg font-semibold">{stock.companyId}</p>
-          </div>
-          <div>
             <label className="block text-sm font-medium text-gray-700">Available Stock</label>
             <p className="text-lg font-semibold text-blue-600">
-              {stock.closingStock.toLocaleString()} {stock.unit}
+              {stock.stockAvailable.toLocaleString()} {stock.unit}
             </p>
           </div>
         </div>
@@ -227,21 +223,21 @@ export default function StockAllocation() {
           <Button
             variant="outline"
             onClick={() => applyPresetAllocation("equal")}
-            disabled={!stock || stock.closingStock === 0}
+            disabled={!stock || stock.stockAvailable === 0}
           >
             Equal Distribution
           </Button>
           <Button
             variant="outline"
             onClick={() => applyPresetAllocation("pattern")}
-            disabled={!stock || stock.closingStock === 0}
+            disabled={!stock || stock.stockAvailable === 0}
           >
             Pattern (1000, 2000, 2500)
           </Button>
           <Button
             variant="outline"
             onClick={() => applyPresetAllocation("proportional")}
-            disabled={!stock || stock.closingStock === 0}
+            disabled={!stock || stock.stockAvailable === 0}
           >
             Proportional
           </Button>
@@ -271,7 +267,7 @@ export default function StockAllocation() {
                 <Input
                   type="number"
                   min="0"
-                  max={stock.closingStock}
+                  max={stock.stockAvailable}
                   value={allocation.quantity}
                   onChange={(e) => handleAllocationChange(index, "quantity", e.target.value)}
                   placeholder="Quantity"

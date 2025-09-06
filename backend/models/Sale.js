@@ -8,7 +8,7 @@ const saleItemSchema = new mongoose.Schema({
   product: {
     type: String,
     required: [true, "Product is required"],
-    enum: ["dosa", "idli", "chapati", "parata", "paneer", "green peas"],
+    // Removed enum to allow dynamic products from database
   },
   expiryDate: {
     type: Date,

@@ -153,12 +153,6 @@ export default function VendorDetailPage() {
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company
-              </label>
-              <p className="text-lg">{vendor.companyId}</p>
-            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

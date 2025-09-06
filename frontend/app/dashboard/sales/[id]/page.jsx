@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSelector, useDispatch } from "react-redux";
 import { use } from "react";
 import { getGSTBreakdown } from "@/lib/calculations";
 import { formatCurrency } from "@/lib/utils";
@@ -9,47 +10,55 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import PDFInvoice from "@/components/PDFInvoice";
+import {
+  updateSale,
+  fetchSaleById,
+  selectSalesLoading,
+  selectSalesError,
+  selectCurrentSale,
+} from "@/lib/store/slices/salesSlice";
 
 const ViewInvoicePage = ({ params }) => {
   const router = useRouter();
-  const [sale, setSale] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  
+  // Redux state
+  const loading = useSelector(selectSalesLoading);
+  const error = useSelector(selectSalesError);
+  const sale = useSelector(selectCurrentSale);
+  
+  // Local state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState("");
   const [deliveryStatus, setDeliveryStatus] = useState("");
   const [showPDFInvoice, setShowPDFInvoice] = useState(false);
+
+  // Helper function to check if invoice is fully paid
+  const isInvoiceFullyPaid = () => {
+    if (!sale) return false;
+    const totalPaid = sale.payments?.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0) || 0;
+    const invoiceTotal = sale.finalAmount || sale.total || 0;
+    return totalPaid >= invoiceTotal;
+  };
+
+  // Helper function to check if invoice is completed (both delivered and fully paid)
+  const isInvoiceCompleted = () => {
+    return isInvoiceFullyPaid() && (sale?.deliveryStatus === "Delivered");
+  };
 
   // Unwrap params for Next.js 15 compatibility
   const unwrappedParams = use(params);
   const saleId = unwrappedParams.id;
 
-  // Fetch sale details
-  const fetchSale = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/sales/${saleId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSale(data.sale);
-      } else {
-        console.error("Failed to fetch sale");
-        router.push("/dashboard/sales");
-      }
-    } catch (error) {
-      console.error("Error fetching sale:", error);
-      router.push("/dashboard/sales");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchSale();
-  }, [saleId]);
+    if (saleId) {
+      dispatch(fetchSaleById(saleId));
+    }
+  }, [dispatch, saleId]);
 
   // Set status values when sale data is loaded
   useEffect(() => {
@@ -60,49 +69,44 @@ const ViewInvoicePage = ({ params }) => {
         amountPaid: sale.amountPaid,
         finalAmount: sale.finalAmount,
         total: sale.total,
+        payments: sale.payments,
+        paymentsLength: sale.payments?.length,
         allKeys: Object.keys(sale),
       });
+
+      // 🔧 CONVERSION: If no payments array but has amountPaid, create one
+      if (!sale.payments && sale.amountPaid && sale.amountPaid > 0) {
+        console.log("🔧 Converting legacy payment data to payments array");
+        const legacyPayment = {
+          amountPaid: sale.amountPaid,
+          paymentMode: sale.paymentMode || "Cash",
+          paymentDate: sale.updatedAt || sale.createdAt || new Date().toISOString(),
+          notes: sale.notes || `Payment via ${sale.paymentMode || "Cash"}`,
+          referenceNumber: sale.referenceNumber || null
+        };
+        // Add the converted payment to the sale object
+        sale.payments = [legacyPayment];
+        console.log("✅ Created payments array:", sale.payments);
+      }
 
       const paymentStatus = sale.paymentStatus || "Pending";
       setPaymentStatus(paymentStatus);
       setDeliveryStatus(sale.deliveryStatus || "Pending");
 
-      // Auto-fill payment mode and amount based on existing status
-      if (paymentStatus === "Paid") {
-        const amountToSet = sale.amountPaid
-          ? sale.amountPaid.toString()
-          : (sale.finalAmount || sale.total || 0).toString();
-        console.log("Setting Paid status - amountPaid:", amountToSet);
-        setPaymentMode(sale.paymentMode || "Cash");
-        setAmountPaid(amountToSet);
-      } else if (paymentStatus === "Partial") {
-        console.log("Setting Partial status");
-        setPaymentMode(sale.paymentMode || "Cash");
-        // For Partial status, if no amount is saved, suggest half the total amount
-        if (sale.amountPaid) {
-          setAmountPaid(sale.amountPaid.toString());
-        } else {
-          const suggestedAmount = Math.floor(
-            (sale.finalAmount || sale.total || 0) / 2
-          );
-          setAmountPaid(suggestedAmount.toString());
-          console.log(
-            "No saved amount for Partial status, suggesting:",
-            suggestedAmount
-          );
-        }
-      } else {
-        console.log("Setting Pending status");
-        setPaymentMode(sale.paymentMode || "");
-        setAmountPaid(sale.amountPaid ? sale.amountPaid.toString() : "");
-      }
+      // Don't auto-fill any amounts - let user enter manually
+      setPaymentMode("");
+      setAmountPaid("");
+        setReferenceNumber("");
     }
   }, [sale]);
 
   // Handle status update
   const handleStatusUpdate = async () => {
-    // Validate required fields
-    if (paymentStatus === "Partial" || paymentStatus === "Paid") {
+    // Only validate payment fields if making a payment (amount entered)
+    const isPaymentStatusChanging = paymentStatus !== sale?.paymentStatus;
+    const isMakingPayment = (paymentStatus === "Partial" || paymentStatus === "Paid") && amountPaid && parseFloat(amountPaid) > 0;
+    
+    if (isMakingPayment) {
       if (!paymentMode) {
         alert("Please select a payment mode");
         return;
@@ -111,51 +115,104 @@ const ViewInvoicePage = ({ params }) => {
         alert("Please enter a valid amount paid");
         return;
       }
+      if (paymentMode === "Online" && !referenceNumber.trim()) {
+        alert("Please enter a reference number for online payments");
+        return;
+      }
 
       const amountPaidNum = parseFloat(amountPaid);
-      if (paymentStatus === "Partial" && amountPaidNum >= sale.finalAmount) {
+      const totalPreviousPaid = sale.payments?.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0) || 0;
+      const invoiceTotal = sale.finalAmount || sale.total || 0; // Handle different field names
+      const remainingAmount = invoiceTotal - totalPreviousPaid;
+      
+      if (paymentStatus === "Partial" && amountPaidNum > remainingAmount) {
         alert(
-          "For partial payment, amount paid must be less than the total amount"
+          `Payment amount (₹${amountPaidNum.toLocaleString("en-IN")}) cannot exceed the remaining balance of ₹${remainingAmount.toLocaleString("en-IN")}`
         );
         return;
       }
-      if (paymentStatus === "Paid" && amountPaidNum !== sale.finalAmount) {
-        alert("For paid status, amount paid must equal the total amount");
+      if (paymentStatus === "Paid" && amountPaidNum !== remainingAmount) {
+        alert(`For paid status, amount must equal the remaining balance of ₹${remainingAmount.toLocaleString("en-IN")}`);
         return;
       }
     }
 
-    setUpdatingStatus(true);
     try {
-      const response = await fetch(`/api/sales/${saleId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      // Calculate payment amounts
+      const totalPreviousPaid = sale.payments?.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0) || 0;
+      const invoiceTotal = sale.finalAmount || sale.total || 0;
+      
+      // Prepare payment data
+      const updateData = {
           paymentStatus,
-          paymentMode,
-          amountPaid: amountPaid ? parseFloat(amountPaid) : undefined,
           deliveryStatus,
-        }),
-      });
+      };
 
-      if (response.ok) {
-        // Refresh sale data
-        await fetchSale();
-        alert("Status updated successfully!");
+      // Add payment transaction if making a payment (either status changing or adding to existing partial payments)
+      if ((paymentStatus === "Partial" || paymentStatus === "Paid") && amountPaid && parseFloat(amountPaid) > 0) {
+        const newPayment = {
+          paymentDate: new Date().toISOString(),
+          paymentMode,
+          amountPaid: parseFloat(amountPaid),
+        };
+
+        // Add reference number or notes based on payment mode
+        if (paymentMode === "Online") {
+          newPayment.referenceNumber = referenceNumber.trim();
+        } else if (paymentMode === "Cash" && referenceNumber.trim()) {
+          newPayment.notes = referenceNumber.trim(); // Save as notes for cash payments
+        }
+
+        // Add to existing payments array or create new one
+        updateData.payments = [...(sale.payments || []), newPayment];
+        updateData.paymentMode = paymentMode;
+        updateData.amountPaid = parseFloat(amountPaid);
+        
+        // Calculate new total paid amount
+        const newTotalPaid = totalPreviousPaid + parseFloat(amountPaid);
+        
+        // Auto-update payment status if full amount is collected
+        if (newTotalPaid >= invoiceTotal) {
+          updateData.paymentStatus = "Paid";
+          console.log(`Auto-updating payment status to 'Paid' as full amount (₹${invoiceTotal}) has been collected`);
+        }
+        
+        // Store reference/notes in main record too for backward compatibility
+        if (paymentMode === "Online" && referenceNumber.trim()) {
+          updateData.referenceNumber = referenceNumber.trim();
+        } else if (paymentMode === "Cash" && referenceNumber.trim()) {
+          updateData.paymentNotes = referenceNumber.trim();
+        }
+      }
+
+      await dispatch(updateSale({ id: saleId, data: updateData })).unwrap();
+      
+      // Refresh the sale data
+      dispatch(fetchSaleById(saleId));
+      
+      // Show detailed success message
+      const totalPaidAfterUpdate = totalPreviousPaid + parseFloat(amountPaid);
+      const remainingAfterUpdate = invoiceTotal - totalPaidAfterUpdate;
+      
+      let successMessage = `Payment of ₹${parseFloat(amountPaid).toLocaleString("en-IN")} recorded successfully!\\n`;
+      successMessage += `Total paid: ₹${totalPaidAfterUpdate.toLocaleString("en-IN")}\\n`;
+      
+      if (remainingAfterUpdate <= 0) {
+        successMessage += "🎉 Invoice fully paid!";
       } else {
-        const error = await response.json();
-        console.error("Status update error:", error);
-        alert(
-          error.message || error.errors?.join(", ") || "Failed to update status"
-        );
+        successMessage += `Remaining balance: ₹${remainingAfterUpdate.toLocaleString("en-IN")}`;
+      }
+      
+      alert(successMessage);
+      
+      // Clear form fields after successful update
+      if (paymentStatus !== "Pending") {
+        setAmountPaid("");
+        setReferenceNumber("");
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Failed to update status");
-    } finally {
-      setUpdatingStatus(false);
+      alert(error.message || "Failed to update status");
     }
   };
 
@@ -214,7 +271,7 @@ const ViewInvoicePage = ({ params }) => {
   }
 
   const gstBreakdown = getGSTBreakdown(sale.items);
-
+console.log(sale);
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -326,52 +383,45 @@ const ViewInvoicePage = ({ params }) => {
                 <div className="flex justify-between text-lg font-bold">
                   <span className="text-gray-600">Final Amount:</span>
                   <span className="font-medium text-red-600">
-                    {formatCurrency(sale.finalAmount)}
+                    {formatCurrency(sale.finalAmount || sale.total)}
                   </span>
                 </div>
               </div>
 
-              {/* Payment Information */}
-              {sale.paymentStatus !== "Pending" && (
+           
+
+              {/* Show message for pending payments */}
+              {sale.paymentStatus === "Pending" && (
                 <div className="border-t pt-2 mt-2">
-                  <div className="text-sm text-gray-600 mb-1">
-                    Payment Information:
+                  <div className="text-sm text-gray-500 italic">
+                    No payments recorded yet. Update the payment status below to add payment information.
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Status:</span>
-                    <span
-                      className={`font-medium ${
-                        sale.paymentStatus === "Paid"
-                          ? "text-green-600"
-                          : "text-blue-600"
-                      }`}>
-                      {sale.paymentStatus}
-                    </span>
+                    </div>
+                  )}
+
+              {/* Payment Summary - Show only totals */}
+              {sale.payments && sale.payments.length > 0 && (
+                <div className="border-t pt-3 mt-3">
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    Payment Summary:
                   </div>
-                  {sale.paymentMode && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Mode:</span>
-                      <span className="font-medium text-gray-900">
-                        {sale.paymentMode}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm font-medium">
+                      <span className="text-gray-600">Total Paid:</span>
+                      <span className="text-green-600">
+                        {formatCurrency(sale.payments.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0))}
                       </span>
                     </div>
-                  )}
-                  {sale.amountPaid && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Amount Paid:</span>
-                      <span className="font-medium text-green-600">
-                        {formatCurrency(sale.amountPaid)}
+                    {sale.paymentStatus === "Partial" && (
+                      <div className="flex justify-between text-sm font-medium">
+                        <span className="text-gray-600">Outstanding:</span>
+                        <span className="text-orange-600">
+                          {formatCurrency((sale.finalAmount || sale.total) - sale.payments.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0))}
                       </span>
-                    </div>
-                  )}
-                  {sale.paymentStatus === "Partial" && sale.amountPaid && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Balance:</span>
-                      <span className="font-medium text-orange-600">
-                        {formatCurrency(sale.finalAmount - sale.amountPaid)}
-                      </span>
-                    </div>
-                  )}
+                </div>
+              )}
+
+                  </div>
                 </div>
               )}
             </div>
@@ -384,11 +434,15 @@ const ViewInvoicePage = ({ params }) => {
             <Card.Title>Status</Card.Title>
           </Card.Header>
           <Card.Content>
+            {/* Debug: Show payment data */}
+           
             <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-500 block mb-1">
-                  Payment Status:
-                </label>
+              {/* Payment Status - Hide when invoice is completed */}
+              {!isInvoiceCompleted() && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    Payment Status:
+                  </label>
                 <div className="mb-2">
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -419,24 +473,18 @@ const ViewInvoicePage = ({ params }) => {
                     setPaymentStatus(newStatus);
                     // Auto-fill amount paid and payment mode based on status
                     if (newStatus === "Paid" && sale) {
-                      console.log(
-                        "Auto-filling Paid status with amount:",
-                        sale.finalAmount
-                      );
-                      setAmountPaid(sale.finalAmount.toString());
-                      setPaymentMode("Cash"); // Default to Cash for Paid status
+                      console.log("Setting Paid status");
+                      setAmountPaid(""); // Don't auto-fill, let user enter
+                      setPaymentMode(""); // Don't default to any mode
                     } else if (newStatus === "Partial") {
-                      console.log("Auto-filling Partial status");
-                      // For Partial status, suggest half the total amount
-                      const suggestedAmount = Math.floor(
-                        (sale.finalAmount || sale.total || 0) / 2
-                      );
-                      setAmountPaid(suggestedAmount.toString());
-                      setPaymentMode("Cash"); // Default to Cash for Partial status
+                      console.log("Setting Partial status");
+                      setAmountPaid(""); // Don't auto-fill, let user enter
+                      setPaymentMode(""); // Don't default to any mode
                     } else if (newStatus === "Pending") {
                       console.log("Clearing fields for Pending status");
                       setAmountPaid("");
                       setPaymentMode("");
+                      setReferenceNumber("");
                     }
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white">
@@ -444,10 +492,33 @@ const ViewInvoicePage = ({ params }) => {
                   <option value="Partial">Partial</option>
                   <option value="Paid">Paid</option>
                 </select>
-              </div>
+                </div>
+              )}
 
-              {/* Payment Mode - Only show if status is Partial or Paid */}
-              {(paymentStatus === "Partial" || paymentStatus === "Paid") && (
+              {/* Show message if invoice is completed (both delivered and fully paid) */}
+              {isInvoiceCompleted() && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-green-800">
+                        Invoice Completed ✅
+                      </h3>
+                      <p className="text-xs text-green-700 mt-1">
+                        This invoice has been delivered and fully paid. Transaction is complete.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+             
+              {/* Payment Mode - Only show if status is Partial or Paid AND not fully paid */}
+              {!isInvoiceFullyPaid() && (paymentStatus === "Partial" || paymentStatus === "Paid") && (
                 <div>
                   <label className="text-sm font-medium text-gray-500 block mb-1">
                     Payment Mode:
@@ -466,7 +537,11 @@ const ViewInvoicePage = ({ params }) => {
                   </div>
                   <select
                     value={paymentMode}
-                    onChange={(e) => setPaymentMode(e.target.value)}
+                    onChange={(e) => {
+                      setPaymentMode(e.target.value);
+                      // Clear reference number when payment mode changes
+                      setReferenceNumber("");
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white">
                     <option value="">Select Payment Mode</option>
                     <option value="Cash">Cash</option>
@@ -475,109 +550,201 @@ const ViewInvoicePage = ({ params }) => {
                 </div>
               )}
 
-              {/* Amount Paid - Only show if status is Partial or Paid */}
-              {(paymentStatus === "Partial" || paymentStatus === "Paid") && (
+              {/* Amount Paid - Show if status is Partial/Paid AND not fully paid */}
+              {!isInvoiceFullyPaid() && (paymentStatus === "Partial" || paymentStatus === "Paid") && (
                 <div>
                   <label className="text-sm font-medium text-gray-500 block mb-1">
-                    Amount Paid (₹):
+                    Payment Amount (₹):
                   </label>
-                  <div className="mb-2">
-                    {sale.amountPaid && (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                        Current: ₹{sale.amountPaid}
-                      </span>
-                    )}
-                    {amountPaid !==
-                      (sale.amountPaid ? sale.amountPaid.toString() : "") &&
-                      amountPaid && (
-                        <span className="ml-2 text-xs text-blue-600">
-                          (Modified)
-                        </span>
-                      )}
-                  </div>
                   <input
                     type="number"
                     value={amountPaid}
                     onChange={(e) => setAmountPaid(e.target.value)}
-                    placeholder={
-                      paymentStatus === "Paid"
-                        ? `₹${sale.finalAmount}`
-                        : "Enter amount"
-                    }
-                    min="0"
-                    max={
-                      paymentStatus === "Paid"
-                        ? sale.finalAmount
-                        : sale.finalAmount - 0.01
-                    }
+                    placeholder={(() => {
+                      const totalPaid = sale.payments?.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0) || 0;
+                      const invoiceTotal = sale.finalAmount || sale.total;
+                      const remaining = invoiceTotal - totalPaid;
+                      
+                      if (paymentStatus === "Paid") {
+                        return `Enter ₹${remaining.toLocaleString("en-IN")} to complete payment`;
+                      } else {
+                        return `Enter amount (Max: ₹${remaining.toLocaleString("en-IN")})`;
+                      }
+                    })()}
+                    min="0.01"
+                    max={(() => {
+                      const totalPaid = sale.payments?.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0) || 0;
+                      const invoiceTotal = sale.finalAmount || sale.total;
+                      const remaining = invoiceTotal - totalPaid;
+                      return paymentStatus === "Paid" ? remaining : remaining - 0.01;
+                    })()}
                     step="0.01"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                   />
+                  
+                  {/* Helper Text */}
+                  <div className="mt-1 text-xs text-gray-500">
+                    {(() => {
+                      const totalPaid = sale.payments?.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0) || 0;
+                      const invoiceTotal = sale.finalAmount || sale.total;
+                      const remaining = invoiceTotal - totalPaid;
+                      
+                      if (paymentStatus === "Paid") {
+                        return `To mark as fully paid, enter exactly ₹${remaining.toLocaleString("en-IN")}`;
+                      } else {
+                        return `For partial payment, enter any amount up to ₹${(remaining - 0.01).toLocaleString("en-IN")}`;
+                      }
+                    })()}
+                  </div>
+
+                  {/* Quick Amount Buttons */}
                   {paymentStatus === "Partial" && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Must be less than ₹{sale.finalAmount}
-                    </p>
+                    <div className="mt-2 flex gap-2 flex-wrap">
+                      {(() => {
+                        const totalPaid = sale.payments?.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0) || 0;
+                        const invoiceTotal = sale.finalAmount || sale.total;
+                        const remaining = invoiceTotal - totalPaid;
+                        const suggestions = [
+                          Math.round(remaining * 0.25),
+                          Math.round(remaining * 0.5),
+                          Math.round(remaining * 0.75),
+                          remaining - 1 // Almost full payment
+                        ].filter(amount => amount > 0 && amount < remaining);
+                        
+                        return suggestions.map((amount, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => setAmountPaid(amount.toString())}
+                            className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                          >
+                            ₹{amount.toLocaleString("en-IN")}
+                          </button>
+                        ));
+                      })()}
+                    </div>
                   )}
+                  
+                  {/* Full Payment Button */}
                   {paymentStatus === "Paid" && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Must equal ₹{sale.finalAmount}
-                    </p>
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const totalPaid = sale.payments?.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0) || 0;
+                          const invoiceTotal = sale.finalAmount || sale.total;
+                          const remaining = invoiceTotal - totalPaid;
+                          setAmountPaid(remaining.toString());
+                        }}
+                        className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                      >
+                        Pay Full Amount (₹{(() => {
+                          const totalPaid = sale.payments?.reduce((sum, payment) => sum + (Number(payment.amountPaid) || 0), 0) || 0;
+                          const invoiceTotal = sale.finalAmount || sale.total;
+                          return (invoiceTotal - totalPaid).toLocaleString("en-IN");
+                        })()})
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
-              <div>
-                <label className="text-sm font-medium text-gray-500 block mb-1">
-                  Delivery Status:
-                </label>
-                <div className="mb-2">
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      sale.deliveryStatus === "Delivered"
-                        ? "bg-green-100 text-green-800"
-                        : sale.deliveryStatus === "Cancelled"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}>
-                    Current: {sale.deliveryStatus}
-                  </span>
-                  {deliveryStatus !== sale.deliveryStatus && (
-                    <span className="ml-2 text-xs text-blue-600">
-                      (Modified)
-                    </span>
-                  )}
+
+              {/* Reference Number for Online Payments */}
+              {!isInvoiceFullyPaid() && (paymentStatus === "Partial" || paymentStatus === "Paid") && paymentMode === "Online" && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    Reference Number: <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={referenceNumber}
+                    onChange={(e) => setReferenceNumber(e.target.value)}
+                    placeholder="Enter transaction reference number"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Required: Enter the transaction ID or reference number for online payments
+                  </p>
                 </div>
-                <select
-                  value={deliveryStatus}
-                  onChange={(e) => setDeliveryStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white">
-                  <option value="Pending">Pending</option>
-                  <option value="Delivered">Delivered</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
-              </div>
-              <Button
-                onClick={handleStatusUpdate}
-                disabled={
-                  updatingStatus ||
-                  (paymentStatus === sale.paymentStatus &&
-                    paymentMode === sale.paymentMode &&
-                    amountPaid ===
-                      (sale.amountPaid ? sale.amountPaid.toString() : "") &&
-                    deliveryStatus === sale.deliveryStatus) ||
-                  ((paymentStatus === "Partial" || paymentStatus === "Paid") &&
-                    (!paymentMode || !amountPaid || amountPaid <= 0))
-                }
-                className="w-full">
-                {updatingStatus
-                  ? "Updating..."
-                  : paymentStatus === sale.paymentStatus &&
-                    paymentMode === sale.paymentMode &&
-                    amountPaid ===
-                      (sale.amountPaid ? sale.amountPaid.toString() : "") &&
-                    deliveryStatus === sale.deliveryStatus
-                  ? "No Changes"
-                  : "Update Status"}
-              </Button>
+              )}
+
+              {/* Notes for Cash Payments */}
+              {(paymentStatus === "Partial" || paymentStatus === "Paid") && paymentMode === "Cash" && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    Payment Notes:
+                  </label>
+                  <input
+                    type="text"
+                    value={referenceNumber}
+                    onChange={(e) => setReferenceNumber(e.target.value)}
+                    placeholder="Enter any notes for this cash payment (optional)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Optional: Add any notes or reference for tracking this cash payment
+                  </p>
+                </div>
+              )}
+              {/* Delivery Status - Hide when invoice is completed */}
+              {!isInvoiceCompleted() && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    Delivery Status:
+                  </label>
+                  <div className="mb-2">
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        sale.deliveryStatus === "Delivered"
+                          ? "bg-green-100 text-green-800"
+                          : sale.deliveryStatus === "Cancelled"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}>
+                      Current: {sale.deliveryStatus}
+                    </span>
+                    {deliveryStatus !== sale.deliveryStatus && (
+                      <span className="ml-2 text-xs text-blue-600">
+                        (Modified)
+                      </span>
+                    )}
+                  </div>
+                  <select
+                    value={deliveryStatus}
+                    onChange={(e) => setDeliveryStatus(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white">
+                    <option value="Pending">Pending</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+              )}
+              {/* Hide Update button ONLY when BOTH delivered AND fully paid */}
+              {!isInvoiceCompleted() && (
+                <Button
+                  onClick={handleStatusUpdate}
+                  disabled={
+                    loading ||
+                    // Disable if nothing has changed AND no payment amount entered
+                    (paymentStatus === sale?.paymentStatus &&
+                      deliveryStatus === sale?.deliveryStatus &&
+                      !amountPaid) ||
+                    // Disable if trying to make payment but missing required fields
+                    ((paymentStatus === "Partial" || paymentStatus === "Paid") &&
+                      amountPaid && parseFloat(amountPaid) > 0 && // Only check if actually making a payment
+                      (!paymentMode || !amountPaid || amountPaid <= 0)) ||
+                    // Disable if online payment but no reference number
+                    (paymentStatus !== "Pending" && paymentMode === "Online" && 
+                      amountPaid && parseFloat(amountPaid) > 0 && // Only check if actually making a payment
+                      !referenceNumber.trim())
+                  }
+                  className="w-full">
+                  {loading
+                    ? "Updating..."
+                    : "Update Status"}
+                </Button>
+              )}
               {sale?.notes && (
                 <div>
                   <span className="text-sm font-medium text-gray-500">
@@ -661,6 +828,76 @@ const ViewInvoicePage = ({ params }) => {
           </div>
         </Card.Content>
       </Card>
+
+      {/* Payment Transactions Table */}
+      {sale.payments && sale.payments.length > 0 && (
+        <Card>
+          <Card.Header>
+            <Card.Title>Payment Transactions ({sale.payments.length})</Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      #
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Payment Mode
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount (₹)
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Reference/Notes
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sale.payments.map((payment, index) => (
+                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {new Date(payment.paymentDate).toLocaleDateString("en-IN")}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          payment.paymentMode === 'Cash' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {payment.paymentMode}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
+                        {formatCurrency(Number(payment.amountPaid))}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                        {payment.paymentMode === "Online" ? (
+                          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                            {payment.referenceNumber || "No reference"}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">
+                            {payment.notes || "No notes"}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+             
+              </table>
+            </div>
+          </Card.Content>
+        </Card>
+      )}
 
       {/* GST Breakdown */}
       {Object.keys(gstBreakdown).length > 0 && (

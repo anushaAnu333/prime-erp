@@ -8,17 +8,12 @@ export async function GET(request) {
     await connectDB();
 
     const { searchParams } = new URL(request.url);
-    const company = searchParams.get("company") || "";
     const product = searchParams.get("product") || "";
     const lowStock = searchParams.get("lowStock") === "true";
     const expired = searchParams.get("expired") === "true";
 
     // Build query
     let query = { isActive: true };
-
-    if (company) {
-      query.companyId = company;
-    }
 
     if (product) {
       query.product = product;
@@ -34,7 +29,7 @@ export async function GET(request) {
 
     // Get stock data
     const stocks = await Stock.find(query)
-      .sort({ companyId: 1, product: 1 })
+      .sort({ product: 1 })
       .lean();
 
     // Calculate summary statistics
@@ -72,7 +67,7 @@ export async function POST(request) {
     const body = await request.json();
 
     // Validate required fields
-    const requiredFields = ["product", "companyId", "unit", "expiryDate"];
+    const requiredFields = ["product", "unit", "expiryDate"];
 
     for (const field of requiredFields) {
       if (!body[field]) {
@@ -83,15 +78,14 @@ export async function POST(request) {
       }
     }
 
-    // Check if stock already exists for this product and company
+    // Check if stock already exists for this product
     const existingStock = await Stock.findOne({
       product: body.product,
-      companyId: body.companyId,
     });
 
     if (existingStock) {
       return NextResponse.json(
-        { message: "Stock already exists for this product and company" },
+        { message: "Stock already exists for this product" },
         { status: 400 }
       );
     }
@@ -99,7 +93,6 @@ export async function POST(request) {
     // Create new stock
     const stock = new Stock({
       product: body.product,
-      companyId: body.companyId,
       openingStock: body.openingStock || 0,
       unit: body.unit,
       expiryDate: body.expiryDate,

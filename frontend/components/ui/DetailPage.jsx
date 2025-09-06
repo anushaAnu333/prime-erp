@@ -19,7 +19,7 @@ const DetailPage = ({
   backText = "Back to List",
   showEdit = true,
   showDelete = true,
-  showBack = true,
+  showBack = false,
   className = "",
   emptyMessage = "No data found",
   children,

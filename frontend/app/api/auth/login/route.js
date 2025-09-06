@@ -4,7 +4,24 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (jsonError) {
+      console.error('Invalid JSON in request:', jsonError);
+      return NextResponse.json(
+        { message: 'Invalid JSON in request body' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate required fields
+    if (!body || !body.email || !body.password) {
+      return NextResponse.json(
+        { message: 'Email and password are required' },
+        { status: 400 }
+      );
+    }
     
     const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
       method: 'POST',
@@ -22,14 +39,17 @@ export async function POST(request) {
 
     const data = await response.json();
     
-    // Forward the Set-Cookie header from the backend
-    const responseHeaders = new Headers();
-    const setCookieHeader = response.headers.get('set-cookie');
-    if (setCookieHeader) {
-      responseHeaders.set('Set-Cookie', setCookieHeader);
-    }
+    // Create the response
+    const nextResponse = NextResponse.json(data);
+    
+    // Forward all Set-Cookie headers from the backend
+    response.headers.forEach((value, key) => {
+      if (key.toLowerCase() === 'set-cookie') {
+        nextResponse.headers.set(key, value);
+      }
+    });
 
-    return NextResponse.json(data, { headers: responseHeaders });
+    return nextResponse;
   } catch (error) {
     console.error('Error proxying login request:', error);
     return NextResponse.json(

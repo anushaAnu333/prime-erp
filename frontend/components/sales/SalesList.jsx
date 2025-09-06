@@ -1,12 +1,27 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import Button from "../ui/Button";
 import Input from "../ui/Input";
 import Select from "../ui/Select";
 import Card from "../ui/Card";
 import Table from "../ui/Table";
+import ActionButtons from "../ui/ActionButtons";
 import Link from "next/link";
+import {
+  fetchSales,
+  fetchCustomersForSales,
+  setCurrentPage,
+  setFilterField,
+  selectSales,
+  selectSalesLoading,
+  selectSalesError,
+  selectSalesPagination,
+  selectSalesFilters,
+  selectSalesCustomers,
+  selectCustomersLoading,
+} from "../../lib/store/slices/salesSlice";
 
 // DateRangeFilter Component
 const DateRangeFilter = ({ dateFrom, dateTo, onDateChange }) => {
@@ -134,102 +149,58 @@ const DateRangeFilter = ({ dateFrom, dateTo, onDateChange }) => {
 };
 
 export default function SalesList() {
-  const [sales, setSales] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [companies, setCompanies] = useState([
+  // Redux state
+  const dispatch = useDispatch();
+  const sales = useSelector(selectSales);
+  const loading = useSelector(selectSalesLoading);
+  const error = useSelector(selectSalesError);
+  const pagination = useSelector(selectSalesPagination);
+  const filters = useSelector(selectSalesFilters);
+  const customersData = useSelector(selectSalesCustomers);
+  const customersLoading = useSelector(selectCustomersLoading);
+  
+  // Local state for companies (static data)
+  const [companies] = useState([
     { value: "", label: "All Companies" },
     { value: "PRIMA-SM", label: "PRIMA Sales & Marketing" },
     { value: "PRIMA-FT", label: "PRIMA Food Trading" },
     { value: "PRIMA-EX", label: "PRIMA Export" },
   ]);
-  const [filters, setFilters] = useState({
-    customer: "",
-    company: "",
-    dateFrom: "",
-    dateTo: "",
-    paymentStatus: "",
-    deliveryStatus: "",
-    type: "Sale",
-  });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    total: 0,
-    totalPages: 0,
-  });
-  const [loading, setLoading] = useState(false);
+  
+  // Transform customers data for select component
+  const customers = [
+    { value: "", label: "All Customers" },
+    ...(customersData || []).map((customer) => ({
+      value: customer.shopName,
+      label: customer.shopName,
+    })),
+  ];
 
   useEffect(() => {
-    fetchSales();
-    fetchCustomers();
-  }, [filters, pagination.page]);
+    // Fetch customers on component mount
+    dispatch(fetchCustomersForSales());
+  }, [dispatch]);
+  
+  useEffect(() => {
+    // Fetch sales when filters or pagination change
+    const params = {
+      page: pagination.page,
+      limit: 20,
+      ...filters,
+    };
+    dispatch(fetchSales(params));
+  }, [dispatch, filters, pagination.page]);
 
-  const fetchSales = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: "20",
-        type: filters.type,
-        ...(filters.customer && { customer: filters.customer }),
-        ...(filters.company && { company: filters.company }),
-        ...(filters.dateFrom && { dateFrom: filters.dateFrom }),
-        ...(filters.dateTo && { dateTo: filters.dateTo }),
-        ...(filters.paymentStatus && { paymentStatus: filters.paymentStatus }),
-        ...(filters.deliveryStatus && {
-          deliveryStatus: filters.deliveryStatus,
-        }),
-      });
-
-      const response = await fetch(`/api/sales?${params}`);
-
-      if (response.ok) {
-        const data = await response.json();
-        setSales(data.sales || []);
-        setPagination((prev) => ({
-          ...prev,
-          total: data.total || 0,
-          totalPages: data.totalPages || 0,
-        }));
-      } else {
-        const errorData = await response.json();
-        console.error("Sales API error:", errorData);
-      }
-    } catch (error) {
-      console.error("Error fetching sales:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCustomers = async () => {
-    try {
-      const response = await fetch("/api/customers");
-      if (response.ok) {
-        const data = await response.json();
-        setCustomers([
-          { value: "", label: "All Customers" },
-          ...(data.customers || []).map((customer) => ({
-            value: customer.shopName,
-            label: customer.shopName,
-          })),
-        ]);
-      }
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-    }
-  };
-
+  // Handle filter changes
   const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    dispatch(setFilterField({ field, value }));
   };
 
+  // Handle page changes
   const handlePageChange = (newPage) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    dispatch(setCurrentPage(newPage));
   };
+
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-IN");
@@ -274,66 +245,74 @@ export default function SalesList() {
   const columns = [
     {
       key: "invoiceNumber",
-      header: filters.type === "Sale Return" ? "Return No" : "Invoice No",
+      header: <span className="whitespace-nowrap">{filters.type === "Sale Return" ? "Return No" : "Invoice No"}</span>,
       render: (value, row) => (
         <Link
-          href={`/dashboard/sales/${row._id}`}
-          className="text-blue-600 hover:text-blue-800 font-medium">
-          {value}
+          href={`/dashboard/sales/${row?._id}`}
+          className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap">
+          {value || 'N/A'}
         </Link>
       ),
     },
     {
       key: "invoiceDate",
-      header: "Date",
-      render: (value) => formatDate(value),
+      header: <span className="whitespace-nowrap">Date</span>,
+      render: (value) => <span className="whitespace-nowrap">{value ? formatDate(value) : 'N/A'}</span>,
     },
     {
       key: "customer",
-      header: "Customer",
+      header: <span className="whitespace-nowrap">Customer</span>,
       render: (value, row) => {
-        if (filters.type === "Sale Return" && row.originalSale) {
+        if (filters.type === "Sale Return" && row?.originalSale) {
           return (
-            <div className="text-sm">
-              <div className="font-medium">{value.shopName}</div>
-              <div className="text-gray-500 text-xs">
-                Against: {row.originalSale.invoiceNumber}
+            <div className="text-sm min-w-0">
+              <div className="font-medium truncate">{value?.shopName || 'N/A'}</div>
+              <div className="text-gray-500 text-xs truncate">
+                Against: {row.originalSale?.invoiceNumber || 'N/A'}
               </div>
             </div>
           );
         }
         return (
-          <div className="text-sm">
-            <div className="font-medium">{value.shopName}</div>
-            <div className="text-gray-500 text-xs">{value.name}</div>
+          <div className="text-sm min-w-0">
+            <div className="font-medium truncate">{value?.shopName || 'N/A'}</div>
+            <div className="text-gray-500 text-xs truncate">{value?.name || 'N/A'}</div>
           </div>
         );
       },
     },
     {
       key: "items",
-      header: "Products",
+      header: <span className="whitespace-nowrap">Products</span>,
       render: (value, row) => {
         if (value && value.length > 0) {
           if (value.length === 1) {
             return (
-              <div className="text-sm">
-                <div className="font-medium">{value[0].product}</div>
-                <div className="text-gray-500 text-xs">
-                  Qty: {value[0].qty} × ₹{value[0].rate}
+              <div className="text-sm min-w-0">
+                <div className="font-medium truncate">{value[0].product}</div>
+                <div className="text-gray-500 text-xs truncate">
+                  HSN: {value[0].hsnCode || 'N/A'} | Qty: {value[0].qty} × ₹{value[0].rate}
                 </div>
               </div>
             );
           } else {
             return (
-              <div className="text-sm">
-                <div className="font-medium">{value.length} Products</div>
-                <div className="text-gray-500 text-xs">
-                  {value
-                    .slice(0, 2)
-                    .map((item) => `${item.product} (${item.qty})`)
-                    .join(", ")}
-                  {value.length > 2 && ` +${value.length - 2} more`}
+              <div className="text-sm min-w-0 max-w-xs">
+                <div className="font-medium mb-1">{value.length} Products</div>
+                <div className="space-y-1">
+                  {value.slice(0, 2).map((item, index) => (
+                    <div key={index} className="text-gray-500 text-xs">
+                      <div className="truncate font-medium">{item.product}</div>
+                      <div className="text-gray-400">
+                        HSN: {item.hsnCode || 'N/A'} • Qty: {item.qty}
+                      </div>
+                    </div>
+                  ))}
+                  {value.length > 2 && (
+                    <div className="text-gray-400 text-xs font-medium">
+                      +{value.length - 2} more items
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -344,35 +323,29 @@ export default function SalesList() {
     },
     {
       key: "finalAmount",
-      header: "Amount",
-      render: (value) => formatCurrency(value),
+      header: <span className="whitespace-nowrap">Amount</span>,
+      render: (value) => <span className="whitespace-nowrap">{value ? formatCurrency(value) : 'N/A'}</span>,
     },
     {
       key: "paymentStatus",
-      header: "Payment",
+      header: <span className="whitespace-nowrap">Payment</span>,
       render: (value) => getStatusBadge(value, "payment"),
     },
     {
       key: "deliveryStatus",
-      header: "Delivery",
+      header: <span className="whitespace-nowrap">Delivery</span>,
       render: (value) => getStatusBadge(value, "delivery"),
     },
     {
       key: "actions",
-      header: "Actions",
+      header: <span className="whitespace-nowrap">Actions</span>,
       render: (_, row) => (
-        <div className="flex gap-2">
-          <Link href={`/dashboard/sales/${row._id}`}>
-            <Button size="sm" variant="outline">
-              View
-            </Button>
-          </Link>
-          <Link href={`/dashboard/sales/edit/${row._id}`}>
-            <Button size="sm" variant="outline">
-              Edit
-            </Button>
-          </Link>
-        </div>
+        <ActionButtons
+          viewHref={`/dashboard/sales/${row?._id}`}
+          editHref={`/dashboard/sales/edit/${row?._id}`}
+          showDelete={false}
+          size="sm"
+        />
       ),
     },
   ];
@@ -449,10 +422,17 @@ export default function SalesList() {
           />
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 font-medium">Error: {error}</p>
+          </div>
+        )}
+
         {/* Sales Table */}
         <div className="overflow-x-auto">
           <Table
-            data={sales}
+            data={sales || []}
             columns={columns}
             loading={loading}
             emptyMessage={

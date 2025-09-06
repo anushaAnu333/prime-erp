@@ -3,21 +3,13 @@
 import { useState, useEffect } from "react";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
-import Select from "../../../components/ui/Select";
 import Card from "../../../components/ui/Card";
 import Table from "../../../components/ui/Table";
 import Link from "next/link";
 
 export default function VendorsPage() {
   const [vendors, setVendors] = useState([]);
-  const [companies, setCompanies] = useState([
-    { value: "", label: "All Companies" },
-    { value: "PRIMA-SM", label: "PRIMA Sales & Marketing" },
-    { value: "PRIMA-FT", label: "PRIMA Food Trading" },
-    { value: "PRIMA-EX", label: "PRIMA Export" },
-  ]);
   const [filters, setFilters] = useState({
-    company: "",
     search: "",
   });
   const [loading, setLoading] = useState(false);
@@ -30,7 +22,6 @@ export default function VendorsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        ...(filters.company && { company: filters.company }),
         ...(filters.search && { search: filters.search }),
       });
 
@@ -82,24 +73,7 @@ export default function VendorsPage() {
       key: "phone",
       header: "Phone",
     },
-    {
-      key: "currentBalance",
-      header: "Balance",
-      render: (value) => (
-        <span
-          className={
-            value > 0
-              ? "text-red-600 font-semibold"
-              : "text-green-600 font-semibold"
-          }>
-          {formatCurrency(value)}
-        </span>
-      ),
-    },
-    {
-      key: "companyId",
-      header: "Company",
-    },
+  
     {
       key: "actions",
       header: "Actions",
@@ -138,12 +112,6 @@ export default function VendorsPage() {
             placeholder="Search vendors..."
             value={filters.search}
             onChange={(e) => handleFilterChange("search", e.target.value)}
-          />
-          <Select
-            placeholder="Select Company"
-            options={companies}
-            value={filters.company}
-            onChange={(value) => handleFilterChange("company", value)}
           />
         </div>
 

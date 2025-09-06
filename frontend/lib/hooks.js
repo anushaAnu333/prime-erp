@@ -61,3 +61,17 @@ export const useVendorsLoading = () =>
   useAppSelector((state) => state.vendors.loading);
 export const useVendorsError = () =>
   useAppSelector((state) => state.vendors.error);
+
+// Stock hooks
+export const useStockList = () => useAppSelector((state) => state.stock);
+export const useStocks = () => useAppSelector((state) => state.stock.stocks);
+export const useCurrentStock = () => useAppSelector((state) => state.stock.currentStock);
+export const useStockSummary = () => useAppSelector((state) => state.stock.summary);
+export const useStockLoading = () => useAppSelector((state) => state.stock.loading);
+export const useStockError = () => useAppSelector((state) => state.stock.error);
+
+// Delivery Stock hooks
+export const useDeliveryStocks = () => useAppSelector((state) => state.stock.deliveryStocks);
+export const useDeliverySummary = () => useAppSelector((state) => state.stock.deliverySummary);
+export const useDeliveryStockLoading = () => useAppSelector((state) => state.stock.deliveryLoading);
+export const useDeliveryStockError = () => useAppSelector((state) => state.stock.deliveryError);

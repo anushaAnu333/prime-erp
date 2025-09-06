@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import Select from "@/components/ui/Select";
+import {
+  fetchCustomersForSales,
+  selectSalesCustomers,
+  selectCustomersLoading,
+} from "@/lib/store/slices/salesSlice";
 
 const CustomerSelect = ({
   value,
@@ -10,41 +16,23 @@ const CustomerSelect = ({
   disabled = false,
   className = "",
 }) => {
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  // Fetch customers
-  const fetchCustomers = async (search = "") => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (search) params.append("search", search);
-      params.append("limit", "50");
-
-      const url = `/api/customers?${params}`;
-      const response = await fetch(url);
-
-      if (response.ok) {
-        const data = await response.json();
-        setCustomers(data.customers);
-      } else {
-        console.error("Failed to fetch customers");
-      }
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const dispatch = useDispatch();
+  const customers = useSelector(selectSalesCustomers);
+  const loading = useSelector(selectCustomersLoading);
 
   // Initial fetch
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    if (!customers || customers.length === 0) {
+      dispatch(fetchCustomersForSales());
+    }
+  }, [dispatch, customers]);
 
-  // Handle search
+  // Handle search - for now, we'll use the existing customers
+  // TODO: Implement search functionality in Redux slice
   const handleSearch = (search) => {
-    fetchCustomers(search);
+    // For now, just dispatch the fetch action
+    // In the future, we can add search parameters to the Redux slice
+    dispatch(fetchCustomersForSales());
   };
 
   // Handle customer selection
@@ -54,7 +42,7 @@ const CustomerSelect = ({
       onCustomerSelect &&
       typeof onCustomerSelect === "function"
     ) {
-      const selectedCustomer = customers.find((c) => c._id === customerId);
+      const selectedCustomer = (customers || []).find((c) => c._id === customerId);
       if (selectedCustomer) {
         onCustomerSelect(selectedCustomer);
       }
@@ -62,7 +50,7 @@ const CustomerSelect = ({
   };
 
   // Format options for select
-  const options = customers.map((customer) => ({
+  const options = (customers || []).map((customer) => ({
     value: customer._id, // Use _id instead of id
     label: `${customer.shopName} - ${customer.name}`, // Use shopName and name
     customer: customer,
@@ -86,7 +74,7 @@ const CustomerSelect = ({
       {value && (
         <div className="mt-2 p-2 bg-gray-50 rounded-md">
           {(() => {
-            const selectedCustomer = customers.find((c) => c._id === value);
+            const selectedCustomer = (customers || []).find((c) => c._id === value);
             if (!selectedCustomer) return null;
 
             return (

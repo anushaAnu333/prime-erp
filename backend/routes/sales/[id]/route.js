@@ -68,6 +68,7 @@ export async function GET(request, { params }) {
         paymentStatus: sale.paymentStatus || "Pending",
         paymentMode: sale.paymentMode,
         amountPaid: sale.amountPaid,
+        payments: sale.payments || [],
         deliveryStatus: sale.deliveryStatus || "Pending",
         agentId: sale.deliveryAgent,
         notes: sale.notes,
@@ -109,6 +110,7 @@ export async function PUT(request, { params }) {
       paymentStatus,
       paymentMode,
       amountPaid,
+      referenceNumber,
       deliveryStatus,
     } = body;
 
@@ -300,6 +302,24 @@ export async function PUT(request, { params }) {
     if (amountPaid !== undefined) updateData.amountPaid = parseFloat(amountPaid);
     if (deliveryStatus) updateData.deliveryStatus = deliveryStatus;
 
+    // Handle payment transactions
+    if (paymentStatus === "Partial" || paymentStatus === "Paid") {
+      const newPayment = {
+        paymentMode,
+        amountPaid: parseFloat(amountPaid),
+        paymentDate: new Date(),
+        referenceNumber: referenceNumber || "",
+        notes: "",
+      };
+
+      // Add to payments array
+      if (!sale.payments) {
+        sale.payments = [];
+      }
+      sale.payments.push(newPayment);
+      updateData.payments = sale.payments;
+    }
+
     // Recalculate totals if items changed
     if (items) {
       updateData.total =
@@ -356,6 +376,7 @@ export async function PUT(request, { params }) {
         paymentStatus: updatedSale.paymentStatus,
         paymentMode: updatedSale.paymentMode,
         amountPaid: updatedSale.amountPaid,
+        payments: updatedSale.payments || [],
         deliveryStatus: updatedSale.deliveryStatus,
         notes: updatedSale.notes,
         updatedAt: updatedSale.updatedAt,

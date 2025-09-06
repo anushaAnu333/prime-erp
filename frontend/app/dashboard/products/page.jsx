@@ -1,105 +1,84 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Card from "../../../components/ui/Card";
 import Table, { ActionIcons } from "../../../components/ui/Table";
 import Modal from "../../../components/ui/Modal";
 import { useModal } from "../../../hooks/useModal";
+import { useDebounce } from "../../../hooks/useDebounce";
+import { useAppDispatch, useAppSelector } from "../../../lib/hooks";
+import { 
+  fetchProducts, 
+  deleteProduct, 
+  selectProducts, 
+  selectProductsLoading, 
+  selectProductsError, 
+  selectProductsPagination 
+} from "../../../lib/store/slices/productsSlice";
 import Link from "next/link";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState([]);
-  const [filters, setFilters] = useState({
-    search: "",
-  });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    total: 0,
-    totalPages: 0,
-  });
-  const [loading, setLoading] = useState(false);
-  const { modalState, showSuccess, showError, showConfirm, hideModal } =
-    useModal();
+  const dispatch = useAppDispatch();
+  const products = useAppSelector(selectProducts);
+  const loading = useAppSelector(selectProductsLoading);
+  const error = useAppSelector(selectProductsError);
+  const pagination = useAppSelector(selectProductsPagination);
+  
+  const [searchInput, setSearchInput] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const debouncedSearch = useDebounce(searchInput, 300); // 300ms debounce
+  
+  const { modalState, showSuccess, showError, showConfirm, hideModal } = useModal();
 
+  // Fetch products when page or search changes
   useEffect(() => {
-    fetchProducts();
-  }, [filters, pagination.page]);
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: "20",
-        ...(filters.search && { search: filters.search }),
-      });
-
-      const response = await fetch(`/api/products?${params}`);
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data.products || []);
-        setPagination((prev) => ({
-          ...prev,
-          total: data.total || 0,
-          totalPages: data.totalPages || 0,
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      showError("Failed to fetch products");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value,
+    dispatch(fetchProducts({ 
+      page: currentPage, 
+      limit: 20, 
+      search: debouncedSearch 
     }));
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, [dispatch, currentPage, debouncedSearch]);
 
-  const handlePageChange = (newPage) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
-  };
+  // Handle search input change
+  const handleSearchChange = useCallback((e) => {
+    setSearchInput(e.target.value);
+    setCurrentPage(1); // Reset to first page on search
+  }, []);
 
-  const handleDelete = async (productId, productName) => {
+  // Handle page change
+  const handlePageChange = useCallback((newPage) => {
+    setCurrentPage(newPage);
+  }, []);
+
+  // Handle delete with Redux
+  const handleDelete = useCallback((productId, productName) => {
     showConfirm(
       `Are you sure you want to delete "${productName}"?`,
       "Confirm Delete",
       async () => {
         try {
-          const response = await fetch(`/api/products/${productId}`, {
-            method: "DELETE",
-          });
-          if (response.ok) {
-            showSuccess(`Product "${productName}" deleted successfully`);
-            fetchProducts();
-          } else {
-            showError("Failed to delete product");
-          }
+          await dispatch(deleteProduct(productId)).unwrap();
+          // No success popup - just silently update the list
         } catch (error) {
           console.error("Error deleting product:", error);
-          showError("Failed to delete product");
+          showError(error || "Failed to delete product");
         }
       }
     );
-  };
+  }, [dispatch, showConfirm, showError]);
 
-  const columns = [
+  // Memoize columns to prevent unnecessary re-renders
+  const columns = useMemo(() => [
     {
       key: "productCode",
       header: "Code",
       className: "w-24",
-      render: (value, row) => (
-        <Link
-          href={`/dashboard/products/${row._id}`}
-          className="text-blue-600 hover:text-blue-800 font-medium text-sm">
+      render: (value) => (
+        <span className="font-medium text-sm text-gray-900">
           {value}
-        </Link>
+        </span>
       ),
     },
     {
@@ -134,18 +113,17 @@ export default function ProductsPage() {
       className: "w-24",
       render: (_, row) => (
         <ActionIcons
-          viewPath={`/dashboard/products/${row._id}`}
           editPath={`/dashboard/products/edit/${row._id}`}
           onDelete={() => handleDelete(row._id, row.name)}
-          deleteConfirmMessage={`Are you sure you want to delete "${row.name}"?`}
-          showView={true}
+          showView={false}
           showEdit={true}
           showDelete={true}
           size="sm"
+          skipConfirm={true}
         />
       ),
     },
-  ];
+  ], [handleDelete]);
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -161,13 +139,20 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Error Display */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
+
+        {/* Search Filter */}
         <div className="mb-6">
           <Input
             type="text"
             placeholder="Search by product name, code, or HSN code"
-            value={filters.search}
-            onChange={(e) => handleFilterChange("search", e.target.value)}
+            value={searchInput}
+            onChange={handleSearchChange}
           />
         </div>
 
@@ -185,20 +170,20 @@ export default function ProductsPage() {
         {pagination.totalPages > 1 && (
           <div className="flex justify-between items-center mt-6">
             <div className="text-sm text-gray-600">
-              Showing page {pagination.page} of {pagination.totalPages} (
+              Showing page {pagination.currentPage} of {pagination.totalPages} (
               {pagination.total} total)
             </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                disabled={pagination.page === 1}
-                onClick={() => handlePageChange(pagination.page - 1)}>
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}>
                 Previous
               </Button>
               <Button
                 variant="outline"
-                disabled={pagination.page === pagination.totalPages}
-                onClick={() => handlePageChange(pagination.page + 1)}>
+                disabled={currentPage === pagination.totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}>
                 Next
               </Button>
             </div>

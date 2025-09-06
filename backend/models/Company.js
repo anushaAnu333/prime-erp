@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const companySchema = new mongoose.Schema(
   {
@@ -48,4 +48,4 @@ companySchema.index({ isActive: 1 });
 const Company =
   mongoose.models.Company || mongoose.model("Company", companySchema);
 
-export default Company;
+module.exports = Company;

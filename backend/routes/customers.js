@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Customer = require("../models/Customer");
+const Sale = require("../models/Sale");
 const { connectDB } = require("../lib/mongodb");
 
 // GET /api/customers - Get all customers
@@ -12,18 +13,15 @@ router.get("/", async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Build query
-    let query = { isActive: true };
+    let query = {};
 
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: "i" } },
         { shopName: { $regex: search, $options: "i" } },
         { phoneNumber: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
       ];
-    }
-
-    if (company) {
-      query.companyId = company;
     }
 
     // Get total count for pagination
@@ -67,6 +65,67 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// GET /api/customers/:id/transactions - Get customer transactions
+router.get("/:id/transactions", async (req, res) => {
+  try {
+    await connectDB();
+
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    // Get all sales for this customer with payments
+    const sales = await Sale.find({
+      customerId: req.params.id,
+      deliveryStatus: { $ne: "Cancelled" }
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Get total count for pagination
+    const total = await Sale.countDocuments({
+      customerId: req.params.id,
+      deliveryStatus: { $ne: "Cancelled" }
+    });
+
+    // Flatten all transactions from all sales
+    const transactions = [];
+    sales.forEach(sale => {
+      if (sale.payments && sale.payments.length > 0) {
+        sale.payments.forEach(payment => {
+          transactions.push({
+            id: `${sale._id}_${payment._id}`,
+            saleId: sale._id,
+            invoiceNumber: sale.invoiceNo,
+            invoiceDate: sale.date,
+            paymentDate: payment.paymentDate,
+            paymentMode: payment.paymentMode,
+            amountPaid: payment.amountPaid,
+            referenceNumber: payment.referenceNumber,
+            notes: payment.notes,
+            totalAmount: sale.total,
+            paymentStatus: sale.paymentStatus
+          });
+        });
+      }
+    });
+
+    // Sort transactions by payment date (newest first)
+    transactions.sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
+
+    res.json({
+      transactions,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+    });
+  } catch (error) {
+    console.error("Error fetching customer transactions:", error);
+    res.status(500).json({ message: "Failed to fetch customer transactions" });
+  }
+});
+
 // POST /api/customers - Create new customer
 router.post("/", async (req, res) => {
   try {
@@ -77,7 +136,7 @@ router.post("/", async (req, res) => {
       address,
       shopName,
       phoneNumber,
-      companyId,
+      email,
       currentBalance = 0,
     } = req.body;
 
@@ -88,22 +147,23 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Generate customer code
-    const lastCustomer = await Customer.findOne().sort({ customerCode: -1 });
-    let nextNumber = 1;
+    // Generate customer code with uniqueness check
+    const generateCustomerCode = () => {
+      const timestamp = Date.now().toString().slice(-6);
+      const random = Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0");
+      return `CUST${timestamp}${random}`;
+    };
 
-    if (lastCustomer && lastCustomer.customerCode) {
-      const lastNumber = parseInt(
-        lastCustomer.customerCode.replace("CUST", "")
-      );
-      nextNumber = lastNumber + 1;
+    let customerCode = generateCustomerCode();
+
+    // Ensure customer code is unique
+    let existingCustomer = await Customer.findOne({ customerCode });
+    while (existingCustomer) {
+      customerCode = generateCustomerCode();
+      existingCustomer = await Customer.findOne({ customerCode });
     }
-
-    const customerCode = `CUST${nextNumber.toString().padStart(3, "0")}`;
-
-    // Handle empty companyId - convert to null
-    const finalCompanyId =
-      companyId && companyId.trim() !== "" ? companyId : null;
 
     // Create new customer
     const customer = new Customer({
@@ -112,7 +172,7 @@ router.post("/", async (req, res) => {
       address: address,
       shopName: shopName,
       phoneNumber: phoneNumber,
-      companyId: finalCompanyId,
+      email: email || null,
       currentBalance: currentBalance,
     });
 
@@ -124,6 +184,22 @@ router.post("/", async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating customer:", error);
+    
+    // Return more specific error messages
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        message: "Validation failed", 
+        errors 
+      });
+    }
+    
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        message: "Customer code already exists" 
+      });
+    }
+    
     res.status(500).json({ message: "Failed to create customer" });
   }
 });

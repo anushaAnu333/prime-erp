@@ -1,7 +1,9 @@
 "use client";
 
+import { use } from "react";
 import ProductForm from "../../../../../components/ProductForm";
 
 export default function EditProductPage({ params }) {
-  return <ProductForm productId={params.id} />;
+  const resolvedParams = use(params);
+  return <ProductForm productId={resolvedParams?.id} />;
 }

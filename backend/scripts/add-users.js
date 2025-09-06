@@ -1,6 +1,8 @@
-require("dotenv").config({ path: "./.env" });
+const dotenv = require("dotenv");
 const { connectDB } = require("../lib/mongodb.js");
 const User = require("../models/User.js");
+
+dotenv.config({ path: "./.env" });
 
 const users = [
   {

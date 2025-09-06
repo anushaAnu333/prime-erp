@@ -4,7 +4,7 @@ const purchaseItemSchema = new mongoose.Schema({
   product: {
     type: String,
     required: [true, "Product is required"],
-    enum: ["dosa", "idli", "chapati", "parata", "paneer", "green peas"],
+    // Removed enum to allow dynamic products from database
   },
   expiryDate: {
     type: Date,
@@ -23,7 +23,7 @@ const purchaseItemSchema = new mongoose.Schema({
   unit: {
     type: String,
     required: [true, "Unit is required"],
-    enum: ["kg", "packet", "piece", "dozen", "box"],
+    enum: ["kg", "packet", "packets", "piece", "pieces", "dozen", "box", "boxes", "l", "liters"],
   },
   hsnCode: {
     type: String,

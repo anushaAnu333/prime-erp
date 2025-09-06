@@ -100,7 +100,15 @@ export function calculateItemTotals(
   }
 
   if (!productDetails) {
-    throw new Error(`Invalid product: ${product}`);
+    // If product not found in hardcoded list, create a default product entry
+    // This allows dynamic products from the database
+    productDetails = {
+      name: product,
+      rate: 0, // Will be overridden by user input
+      gstRate: 18, // Default GST rate
+      unit: "packet", // Default unit
+      hsnCode: "0000" // Default HSN code
+    };
   }
 
   const actualRate = rate || productDetails.rate;
@@ -301,9 +309,8 @@ export function validateInvoiceData(invoiceData) {
       if (!item.product) {
         errors.push(`Item ${index + 1}: Product is required`);
       }
-      if (!PRODUCTS[item.product]) {
-        errors.push(`Item ${index + 1}: Invalid product "${item.product}"`);
-      }
+      // Product validation is now flexible - any product name is allowed
+      // The system will create default product details if not found in hardcoded list
       if (!item.qty || item.qty <= 0) {
         errors.push(`Item ${index + 1}: Quantity must be greater than 0`);
       }
@@ -365,7 +372,15 @@ export function calculatePurchaseTotals(product, qty, rate, discount = 0) {
   }
 
   if (!productDetails) {
-    throw new Error(`Invalid product: ${product}`);
+    // If product not found in hardcoded list, create a default product entry
+    // This allows dynamic products from the database
+    productDetails = {
+      name: product,
+      rate: 0, // Will be overridden by user input
+      gstRate: 18, // Default GST rate
+      unit: "packet", // Default unit
+      hsnCode: "0000" // Default HSN code
+    };
   }
 
   const taxableValue = Math.round(qty * rate * 100) / 100;
@@ -464,10 +479,8 @@ export function validatePurchaseData(purchaseData) {
       if (!item.product) {
         errors.push(`Item ${index + 1}: Product is required`);
       }
-      const productDetails = getProductDetails(item.product);
-      if (!productDetails) {
-        errors.push(`Item ${index + 1}: Invalid product "${item.product}"`);
-      }
+      // Product validation is now flexible - any product name is allowed
+      // The system will create default product details if not found in hardcoded list
       if (!item.qty || item.qty <= 0) {
         errors.push(`Item ${index + 1}: Quantity must be greater than 0`);
       }

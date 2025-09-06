@@ -30,26 +30,19 @@ const customerSchema = new mongoose.Schema(
       type: String,
       required: [true, "Phone number is required"],
       trim: true,
-      match: [/^[\+]?[1-9][\d]{0,15}$/, "Please enter a valid phone number"],
+      match: [/^[\+]?[1-9][\d\-\s()]{0,20}$/, "Please enter a valid phone number"],
     },
-    companyId: {
+    email: {
       type: String,
-      enum: ["PRIMA-SM", "PRIMA-FT", "PRIMA-EX"], // 2-3 companies
-      default: null,
-    },
-    vendorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Vendor",
-      default: null,
+      required: false,
+      trim: true,
+      lowercase: true,
+      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, "Please enter a valid email address"],
     },
     currentBalance: {
       type: Number,
       default: 0,
       min: [0, "Balance cannot be negative"],
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
     },
   },
   {
@@ -58,9 +51,9 @@ const customerSchema = new mongoose.Schema(
 );
 
 // Index for efficient queries
-customerSchema.index({ companyId: 1, isActive: 1 });
-customerSchema.index({ vendorId: 1, isActive: 1 });
 customerSchema.index({ name: 1 });
+customerSchema.index({ phoneNumber: 1 });
+customerSchema.index({ email: 1 });
 
 const Customer =
   mongoose.models.Customer || mongoose.model("Customer", customerSchema);
