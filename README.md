@@ -1,265 +1,246 @@
-# Prima ERP - Sales & Marketing
+# Prima ERP - Monorepo Structure
 
-A complete ERP system for sales and marketing management with role-based access control.
+This project has been restructured into a monorepo with separate frontend and backend folders for better organization and performance optimization.
 
-## 🚀 Features
-
-- **User Authentication**: Secure login with JWT tokens
-- **Role-Based Access Control**: Admin, Manager, Accountant, and Delivery Agent roles
-- **Dashboard**: Role-specific dashboards with stats and quick actions
-- **Mobile Responsive**: Works perfectly on all devices
-- **Modern UI**: Clean, professional design with Tailwind CSS
-
-## 🛠️ Tech Stack
-
-- **Frontend**: Next.js 14 (App Router), React, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **Database**: MongoDB with Mongoose
-- **Authentication**: JWT tokens with HTTP-only cookies
-- **Security**: bcryptjs for password hashing
-
-## 📋 Prerequisites
-
-- Node.js 18+
-- MongoDB (local or cloud)
-- npm or yarn
-
-## 🚀 Quick Start
-
-### 1. Clone and Install
-
-```bash
-# Navigate to the project directory
-cd prima-erp
-
-# Install dependencies
-npm install
-```
-
-### 2. Environment Setup
-
-Create a `.env.local` file in the root directory:
-
-```env
-MONGODB_URI=mongodb://localhost:27017/prima-erp
-JWT_SECRET=your-super-secret-jwt-key-here-change-in-production
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### 3. Database Setup
-
-Make sure MongoDB is running, then seed the database:
-
-```bash
-npm run seed
-```
-
-This will create initial users with the following credentials:
-
-| Role           | Email                | Password      |
-| -------------- | -------------------- | ------------- |
-| Admin          | admin@prima.com      | admin123      |
-| Manager        | manager@prima.com    | manager123    |
-| Accountant     | accountant@prima.com | accountant123 |
-| Delivery Agent | agent1@prima.com     | agent123      |
-
-### 4. Start Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Environment Setup
-
-Create a `.env.local` file in the root directory with the following variables:
-
-```env
-MONGODB_URI=mongodb+srv://anushasurendran566:anusha@cluster0.yaq5ykd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-JWT_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-## MongoDB Atlas Setup
-
-Before running the application, make sure to:
-
-1. **Whitelist Your IP Address**:
-
-   - Log into [MongoDB Atlas](https://cloud.mongodb.com)
-   - Go to your cluster → Network Access
-   - Click "Add IP Address"
-   - Choose "Add Current IP Address" or "Allow Access from Anywhere" (0.0.0.0/0)
-
-2. **Add Users to Database**:
-   - After whitelisting your IP, run: `node add-user.js`
-   - This will create the following users:
-     - Admin: admin@prima.com / admin123
-     - Manager: manager@prima.com / manager123
-     - Accountant: accountant@prima.com / accountant123
-     - Agent: agent1@prima.com / agent123
-
-## 👥 User Roles & Access
-
-### Admin/Manager/Accountant
-
-- Full access to all features
-- Dashboard with company-wide stats
-- Sales Management
-- Purchase Management
-- Stock Management
-- Payment Tracking
-- Reports
-- Settings
-
-### Delivery Agent
-
-- Limited access to assigned deliveries
-- Personal dashboard with individual stats
-- Create Sale
-- Collect Payment
-- My Stock
-- Today's Route
-
-## 📁 Project Structure
+## 🏗️ Project Structure
 
 ```
 prima-erp/
-├── app/
-│   ├── (auth)/           # Authentication pages
-│   │   ├── login/
-│   │   └── layout.jsx
-│   ├── dashboard/        # Dashboard pages
-│   │   ├── page.jsx
-│   │   └── layout.jsx
-│   ├── api/             # API routes
-│   │   ├── auth/
-│   │   └── users/
-│   ├── globals.css
-│   ├── layout.jsx
-│   └── page.jsx
-├── components/
-│   ├── ui/              # Reusable UI components
-│   ├── LoginForm.jsx
-│   ├── Navigation.jsx
-│   └── ProtectedRoute.jsx
-├── lib/
-│   ├── mongodb.js       # Database connection
-│   ├── auth.js          # Authentication utilities
-│   ├── utils.js         # Helper functions
-│   └── seed.js          # Database seeder
-├── models/
-│   └── User.js          # User model
-└── middleware.js        # Route protection
+├── frontend/                 # Next.js Frontend Application
+│   ├── app/                 # Next.js App Router
+│   ├── components/          # React Components
+│   ├── hooks/              # Custom React Hooks
+│   ├── lib/                # Frontend Utilities
+│   ├── public/             # Static Assets
+│   └── package.json        # Frontend Dependencies
+├── backend/                # Express.js Backend API
+│   ├── models/             # MongoDB Models
+│   ├── routes/             # API Routes
+│   ├── lib/                # Backend Utilities
+│   ├── scripts/            # Database Scripts
+│   └── package.json        # Backend Dependencies
+└── package.json            # Root Monorepo Configuration
 ```
 
-## 🔐 Security Features
+## 🚀 Quick Start
 
-- **Password Hashing**: bcryptjs with 12+ salt rounds
-- **JWT Tokens**: Stored in HTTP-only cookies
-- **CORS Protection**: Configured for API routes
-- **Input Validation**: Form validation and sanitization
-- **SQL Injection Protection**: Mongoose ODM
-- **Rate Limiting**: Built-in protection
-- **Environment Variables**: Secure configuration
+### Prerequisites
 
-## 📱 Mobile Features
+- Node.js 18+
+- npm 8+
+- MongoDB
 
-- **Responsive Design**: Tailwind CSS responsive classes
-- **Touch-Friendly**: Optimized for mobile interaction
-- **Mobile Navigation**: Hamburger menu for mobile
-- **Fast Loading**: Optimized for mobile networks
-- **Cross-Browser**: Works on iOS Safari and Android Chrome
+### Installation
 
-## 🧪 Testing
+1. **Install all dependencies:**
 
-Test the following scenarios:
+   ```bash
+   npm run install:all
+   ```
 
-1. **Login with valid credentials** ✅
-2. **Login with invalid credentials** ✅
-3. **Access dashboard after login** ✅
-4. **Logout functionality** ✅
-5. **Protected route access** ✅
-6. **Role-based navigation** ✅
-7. **Mobile responsive design** ✅
-8. **Page refresh maintains session** ✅
+2. **Set up environment variables:**
+   Create `.env` files in both frontend and backend directories:
 
-## 🎨 Design System
+   **Backend (.env):**
 
-### Colors
+   ```env
+   MONGODB_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret
+   PORT=3001
+   NODE_ENV=development
+   ```
 
-- **Primary**: Blue (#3B82F6)
-- **Success**: Green (#10B981)
-- **Danger**: Red (#EF4444)
-- **Gray**: Various shades for text and borders
+   **Frontend (.env.local):**
 
-### Typography
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:3001
+   ```
 
-- **Headings**: font-bold, text-xl/2xl/3xl
-- **Body**: font-normal, text-sm/base
-- **Labels**: font-medium, text-sm
+3. **Start development servers:**
 
-### Layout
+   ```bash
+   npm run dev
+   ```
 
-- **Max width**: 1200px centered
-- **Padding**: 4-6 on mobile, 8-12 on desktop
-- **Cards**: rounded-lg, shadow-sm, border
+   This will start both frontend (port 3000) and backend (port 3001) concurrently.
+
+## 📦 Available Scripts
+
+### Root Level (Monorepo)
+
+- `npm run dev` - Start both frontend and backend in development mode
+- `npm run build` - Build both frontend and backend
+- `npm run start` - Start both frontend and backend in production mode
+- `npm run install:all` - Install dependencies for all packages
+- `npm run lint` - Lint both frontend and backend
+- `npm run clean` - Clean all node_modules and build files
+- `npm run optimize` - Run optimization scripts for both packages
+
+### Frontend Only
+
+- `npm run dev:frontend` - Start frontend development server
+- `npm run build:frontend` - Build frontend for production
+- `npm run start:frontend` - Start frontend production server
+- `npm run optimize:frontend` - Optimize frontend bundle
+
+### Backend Only
+
+- `npm run dev:backend` - Start backend development server
+- `npm run build:backend` - Build backend
+- `npm run start:backend` - Start backend production server
+- `npm run optimize:backend` - Optimize backend
+
+## ⚡ Performance Optimizations
+
+### Frontend Optimizations
+
+- **Turbopack** for faster development builds
+- **SWC Minification** for faster production builds
+- **Code Splitting** with dynamic imports
+- **Image Optimization** with Next.js Image component
+- **API Response Caching** with intelligent cache invalidation
+- **Bundle Analysis** with `npm run analyze`
+- **Lazy Loading** for components and routes
+- **Service Worker** for offline support (optional)
+
+### Backend Optimizations
+
+- **Connection Pooling** for MongoDB
+- **Response Caching** with Redis (optional)
+- **Request Rate Limiting**
+- **Compression** middleware
+- **Error Handling** with proper logging
+- **Health Check** endpoints
+
+### API Optimizations
+
+- **Intelligent Caching** with 5-minute TTL
+- **Request Deduplication** for concurrent requests
+- **Error Retry Logic** with exponential backoff
+- **Request Abortion** for cancelled requests
+- **Real-time Updates** with WebSocket support
+
+## 🔧 Development Features
+
+### Frontend
+
+- **TypeScript** support
+- **Tailwind CSS** for styling
+- **ESLint** for code quality
+- **Hot Module Replacement** for fast development
+- **Component Library** with reusable UI components
+- **Form Validation** with custom hooks
+- **State Management** with React hooks
+
+### Backend
+
+- **Express.js** framework
+- **MongoDB** with Mongoose ODM
+- **JWT Authentication** with secure cookies
+- **CORS** configuration
+- **Request Validation** middleware
+- **Error Handling** middleware
+- **Logging** with structured logs
+
+## 📊 Monitoring & Analytics
+
+### Performance Monitoring
+
+- **Bundle Size Analysis** with webpack-bundle-analyzer
+- **API Response Times** monitoring
+- **Error Tracking** with proper error boundaries
+- **User Experience Metrics** tracking
+
+### Development Tools
+
+- **Hot Reload** for both frontend and backend
+- **Debug Logging** in development mode
+- **API Documentation** with Swagger (planned)
+- **Database Seeding** scripts
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### Frontend Deployment
 
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Set environment variables in Vercel dashboard
-4. Deploy
+The frontend can be deployed to:
 
-### Other Platforms
+- **Vercel** (recommended for Next.js)
+- **Netlify**
+- **AWS S3 + CloudFront**
+- **Any static hosting service**
 
-The app can be deployed to any platform that supports Next.js:
+### Backend Deployment
 
-- Netlify
-- Railway
-- DigitalOcean App Platform
-- AWS Amplify
+The backend can be deployed to:
 
-## 🔧 Development
+- **Railway**
+- **Heroku**
+- **AWS EC2**
+- **DigitalOcean**
+- **Any Node.js hosting service**
 
-### Available Scripts
+### Environment Variables
 
-```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-npm run seed         # Seed database with initial data
-```
+Make sure to set the following environment variables in production:
 
-### Adding New Features
+**Frontend:**
 
-1. Create API routes in `app/api/`
-2. Add components in `components/`
-3. Create pages in `app/`
-4. Update navigation in `components/Navigation.jsx`
-5. Add role-based access control
+- `NEXT_PUBLIC_API_URL` - Backend API URL
+
+**Backend:**
+
+- `MONGODB_URI` - MongoDB connection string
+- `JWT_SECRET` - JWT signing secret
+- `NODE_ENV` - Set to 'production'
+- `PORT` - Server port (optional)
+
+## 🔒 Security Features
+
+- **JWT Authentication** with secure HTTP-only cookies
+- **CORS** protection
+- **Input Validation** and sanitization
+- **Rate Limiting** (implemented in backend)
+- **Secure Headers** with helmet middleware
+- **SQL Injection** protection (MongoDB)
+- **XSS Protection** with proper content encoding
+
+## 📈 Performance Metrics
+
+### Target Performance Goals
+
+- **First Contentful Paint**: < 1.5s
+- **Largest Contentful Paint**: < 2.5s
+- **Cumulative Layout Shift**: < 0.1
+- **First Input Delay**: < 100ms
+- **API Response Time**: < 200ms
+
+### Optimization Checklist
+
+- [x] Code splitting implemented
+- [x] Image optimization enabled
+- [x] API response caching
+- [x] Bundle size optimization
+- [x] Lazy loading for components
+- [x] Service worker (optional)
+- [x] Database query optimization
+- [x] CDN integration (deployment specific)
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
+4. Run tests and linting
 5. Submit a pull request
 
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License.
 
 ## 🆘 Support
 
-For support, email support@prima-erp.com or create an issue in the repository.
+For support and questions:
 
----
-
-**Ready for next feature:** Sales Invoice Creation
+- Create an issue in the repository
+- Check the documentation
+- Review the optimization guides in the docs folder
