@@ -35,11 +35,5 @@
         }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://your-backend-url.railway.app/api/$1"
-    }
   ]
 }
