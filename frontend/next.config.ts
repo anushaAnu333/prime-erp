@@ -6,10 +6,8 @@ const nextConfig: NextConfig = {
     optimizeCss: process.env.NODE_ENV === "production",
     optimizePackageImports: ["@/components/ui"],
   },
-  // Fix Turbopack root directory warning
-  turbopack: {
-    root: path.join(__dirname, "."),
-  },
+  // Fix Turbopack root directory warning - use outputFileTracingRoot instead
+  outputFileTracingRoot: path.join(__dirname, "."),
 
   // Image optimization
   images: {
