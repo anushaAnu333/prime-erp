@@ -1,8 +1,11 @@
 // API Configuration
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+// For Vercel deployment, use relative URLs (same domain)
+// For development, use localhost
+export const API_BASE_URL = process.env.NODE_ENV === "production" 
+  ? "" // Empty string means same domain
+  : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001");
 
-// API endpoints - Use full URLs to backend server
+// API endpoints - Use relative URLs for Vercel deployment
 export const API_ENDPOINTS = {
   // Auth
   LOGIN: `${API_BASE_URL}/api/auth/login`,
