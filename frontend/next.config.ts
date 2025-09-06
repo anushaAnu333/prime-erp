@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   },
   // Fix Turbopack root directory warning
   turbopack: {
-    root: path.join(__dirname, ".."),
+    root: path.join(__dirname, "."),
   },
 
   // Image optimization
@@ -48,11 +48,13 @@ const nextConfig: NextConfig = {
         };
       }
 
-      // Add path alias for backend
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        "@backend": path.join(__dirname, "../backend"),
-      };
+      // Add path alias for backend (remove in production)
+      if (process.env.NODE_ENV === "development") {
+        config.resolve.alias = {
+          ...config.resolve.alias,
+          "@backend": path.join(__dirname, "../backend"),
+        };
+      }
 
       return config;
     },

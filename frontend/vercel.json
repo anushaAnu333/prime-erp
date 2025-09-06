@@ -39,7 +39,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "destination": "https://your-backend-url.railway.app/api/$1"
     }
   ]
 }
