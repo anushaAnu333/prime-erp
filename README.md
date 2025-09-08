@@ -1,246 +1,232 @@
-# Prima ERP - Monorepo Structure
+# Prima ERP - Unified Next.js Application
 
-This project has been restructured into a monorepo with separate frontend and backend folders for better organization and performance optimization.
+## Overview
+This is a complete business management system built with Next.js, featuring both frontend and backend functionality in a single unified application.
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 prima-erp/
-├── frontend/                 # Next.js Frontend Application
-│   ├── app/                 # Next.js App Router
-│   ├── components/          # React Components
-│   ├── hooks/              # Custom React Hooks
-│   ├── lib/                # Frontend Utilities
-│   ├── public/             # Static Assets
-│   └── package.json        # Frontend Dependencies
-├── backend/                # Express.js Backend API
-│   ├── models/             # MongoDB Models
-│   ├── routes/             # API Routes
-│   ├── lib/                # Backend Utilities
-│   ├── scripts/            # Database Scripts
-│   └── package.json        # Backend Dependencies
-└── package.json            # Root Monorepo Configuration
+├── app/                          # Next.js App Router
+│   ├── api/                      # API Routes (Backend functionality)
+│   │   ├── auth/                 # Authentication endpoints
+│   │   ├── products/             # Product management
+│   │   ├── customers/            # Customer management
+│   │   ├── sales/                # Sales management
+│   │   ├── vendors/              # Vendor management
+│   │   ├── stock/                # Stock management
+│   │   ├── dashboard/            # Dashboard analytics
+│   │   └── health/               # Health check
+│   ├── (auth)/                   # Authentication pages
+│   ├── dashboard/                # Dashboard pages
+│   ├── reports/                  # Reports pages
+│   ├── globals.css               # Global styles
+│   ├── layout.jsx                # Root layout
+│   └── page.jsx                  # Home page
+├── components/                   # React components
+├── lib/                          # Utility libraries
+│   ├── mongodb.js                # Database connection
+│   └── providers.js              # Context providers
+├── models/                       # Mongoose models
+├── hooks/                        # Custom React hooks
+├── store/                        # Redux store
+├── public/                       # Static assets
+├── scripts/                      # Database seeding scripts
+├── middleware.js                 # Next.js middleware for auth & CORS
+├── package.json                  # Dependencies and scripts
+├── next.config.ts                # Next.js configuration
+├── tailwind.config.js            # Tailwind CSS configuration
+└── tsconfig.json                 # TypeScript configuration
 ```
 
-## 🚀 Quick Start
+## Features
+
+### ✅ Implemented
+- **Authentication System** - JWT-based login/logout
+- **Product Management** - Full CRUD operations
+- **Customer Management** - Customer data and transaction history
+- **Sales Management** - Sales processing with stock integration
+- **Stock Management** - Inventory tracking and management
+- **Vendor Management** - Vendor information management
+- **Dashboard Analytics** - Business insights and statistics
+- **Database Integration** - MongoDB with Mongoose
+- **API Security** - Authentication middleware and CORS
+- **Health Monitoring** - System health check endpoint
+
+### 🚧 In Progress
+- Purchase management
+- Payment management
+- User management
+- Company management
+- Reports generation
+
+## Quick Start
 
 ### Prerequisites
-
 - Node.js 18+
-- npm 8+
-- MongoDB
+- MongoDB Atlas account or local MongoDB
+- Git
 
 ### Installation
 
-1. **Install all dependencies:**
-
+1. **Clone and setup:**
    ```bash
-   npm run install:all
+   git clone <repository-url>
+   cd prima-erp
+   npm install
    ```
 
-2. **Set up environment variables:**
-   Create `.env` files in both frontend and backend directories:
-
-   **Backend (.env):**
-
+2. **Environment configuration:**
+   ```bash
+   cp env.example .env.local
+   ```
+   
+   Edit `.env.local` with your configuration:
    ```env
-   MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   PORT=3001
+   MONGODB_URI=mongodb://localhost:27017/prima-erp
+   JWT_SECRET=your-super-secret-jwt-key-here
    NODE_ENV=development
    ```
 
-   **Frontend (.env.local):**
-
-   ```env
-   NEXT_PUBLIC_API_URL=http://localhost:3001
-   ```
-
-3. **Start development servers:**
-
+3. **Start development server:**
    ```bash
    npm run dev
    ```
 
-   This will start both frontend (port 3000) and backend (port 3001) concurrently.
+4. **Open your browser:**
+   Visit [http://localhost:3000](http://localhost:3000)
 
-## 📦 Available Scripts
+## API Endpoints
 
-### Root Level (Monorepo)
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/me` - Get current user
 
-- `npm run dev` - Start both frontend and backend in development mode
-- `npm run build` - Build both frontend and backend
-- `npm run start` - Start both frontend and backend in production mode
-- `npm run install:all` - Install dependencies for all packages
-- `npm run lint` - Lint both frontend and backend
-- `npm run clean` - Clean all node_modules and build files
-- `npm run optimize` - Run optimization scripts for both packages
+### Products
+- `GET /api/products` - Get all products (with pagination & search)
+- `POST /api/products` - Create new product
+- `GET /api/products/[id]` - Get product by ID
+- `PUT /api/products/[id]` - Update product
+- `DELETE /api/products/[id]` - Delete product
 
-### Frontend Only
+### Customers
+- `GET /api/customers` - Get all customers (with pagination & search)
+- `POST /api/customers` - Create new customer
+- `GET /api/customers/[id]` - Get customer by ID
+- `PUT /api/customers/[id]` - Update customer
+- `DELETE /api/customers/[id]` - Delete customer
+- `GET /api/customers/[id]/transactions` - Get customer transactions
 
-- `npm run dev:frontend` - Start frontend development server
-- `npm run build:frontend` - Build frontend for production
-- `npm run start:frontend` - Start frontend production server
-- `npm run optimize:frontend` - Optimize frontend bundle
+### Sales
+- `GET /api/sales` - Get all sales (with filtering)
+- `POST /api/sales` - Create new sale
+- `GET /api/sales/[id]` - Get sale by ID
+- `PUT /api/sales/[id]` - Update sale
+- `DELETE /api/sales/[id]` - Delete sale
 
-### Backend Only
+### Stock
+- `GET /api/stock` - Get all stock data
+- `POST /api/stock` - Create new stock entry
+- `GET /api/stock/[id]` - Get stock by ID
+- `PUT /api/stock/[id]` - Update stock entry
+- `DELETE /api/stock/[id]` - Delete stock entry
 
-- `npm run dev:backend` - Start backend development server
-- `npm run build:backend` - Build backend
-- `npm run start:backend` - Start backend production server
-- `npm run optimize:backend` - Optimize backend
+### Dashboard
+- `GET /api/dashboard` - Get dashboard overview data
+- `GET /api/dashboard/stats` - Get dashboard statistics
 
-## ⚡ Performance Optimizations
+### Health Check
+- `GET /api/health` - System health check
 
-### Frontend Optimizations
+## Available Scripts
 
-- **Turbopack** for faster development builds
-- **SWC Minification** for faster production builds
-- **Code Splitting** with dynamic imports
-- **Image Optimization** with Next.js Image component
-- **API Response Caching** with intelligent cache invalidation
-- **Bundle Analysis** with `npm run analyze`
-- **Lazy Loading** for components and routes
-- **Service Worker** for offline support (optional)
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript type checking
 
-### Backend Optimizations
+## Technology Stack
 
-- **Connection Pooling** for MongoDB
-- **Response Caching** with Redis (optional)
-- **Request Rate Limiting**
-- **Compression** middleware
-- **Error Handling** with proper logging
-- **Health Check** endpoints
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Backend**: Next.js API Routes
+- **Database**: MongoDB with Mongoose
+- **Authentication**: JWT with HTTP-only cookies
+- **Styling**: Tailwind CSS
+- **State Management**: Redux Toolkit
+- **Deployment**: Vercel (recommended)
 
-### API Optimizations
+## Security Features
 
-- **Intelligent Caching** with 5-minute TTL
-- **Request Deduplication** for concurrent requests
-- **Error Retry Logic** with exponential backoff
-- **Request Abortion** for cancelled requests
-- **Real-time Updates** with WebSocket support
+- JWT-based authentication
+- HTTP-only cookies for token storage
+- CORS protection
+- Input validation
+- Role-based access control
+- SQL injection prevention (MongoDB)
 
-## 🔧 Development Features
+## Deployment
 
-### Frontend
+### Vercel (Recommended)
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
 
-- **TypeScript** support
-- **Tailwind CSS** for styling
-- **ESLint** for code quality
-- **Hot Module Replacement** for fast development
-- **Component Library** with reusable UI components
-- **Form Validation** with custom hooks
-- **State Management** with React hooks
+### Other Platforms
+The project can be deployed to any platform that supports Next.js:
+- Netlify
+- Railway
+- DigitalOcean App Platform
+- AWS Amplify
 
-### Backend
+## Development
 
-- **Express.js** framework
-- **MongoDB** with Mongoose ODM
-- **JWT Authentication** with secure cookies
-- **CORS** configuration
-- **Request Validation** middleware
-- **Error Handling** middleware
-- **Logging** with structured logs
+### Adding New API Routes
+1. Create a new directory in `app/api/`
+2. Add `route.js` file with exported functions (GET, POST, PUT, DELETE)
+3. Use the existing patterns for database connections and error handling
 
-## 📊 Monitoring & Analytics
+### Adding New Pages
+1. Create a new directory in `app/`
+2. Add `page.jsx` or `page.tsx` file
+3. Use the existing layout and styling patterns
 
-### Performance Monitoring
+## Troubleshooting
 
-- **Bundle Size Analysis** with webpack-bundle-analyzer
-- **API Response Times** monitoring
-- **Error Tracking** with proper error boundaries
-- **User Experience Metrics** tracking
+### Common Issues
 
-### Development Tools
+1. **Database Connection Failed**
+   - Check MongoDB URI in environment variables
+   - Ensure MongoDB is running and accessible
 
-- **Hot Reload** for both frontend and backend
-- **Debug Logging** in development mode
-- **API Documentation** with Swagger (planned)
-- **Database Seeding** scripts
+2. **Authentication Issues**
+   - Verify JWT_SECRET is set
+   - Check cookie settings in browser
 
-## 🚀 Deployment
+3. **API Routes Not Working**
+   - Ensure middleware.js is properly configured
+   - Check Next.js version compatibility
 
-### Frontend Deployment
+### Getting Help
 
-The frontend can be deployed to:
+- Check the console for error messages
+- Verify environment variables are set correctly
+- Ensure all dependencies are installed
+- Check MongoDB connection status
 
-- **Vercel** (recommended for Next.js)
-- **Netlify**
-- **AWS S3 + CloudFront**
-- **Any static hosting service**
-
-### Backend Deployment
-
-The backend can be deployed to:
-
-- **Railway**
-- **Heroku**
-- **AWS EC2**
-- **DigitalOcean**
-- **Any Node.js hosting service**
-
-### Environment Variables
-
-Make sure to set the following environment variables in production:
-
-**Frontend:**
-
-- `NEXT_PUBLIC_API_URL` - Backend API URL
-
-**Backend:**
-
-- `MONGODB_URI` - MongoDB connection string
-- `JWT_SECRET` - JWT signing secret
-- `NODE_ENV` - Set to 'production'
-- `PORT` - Server port (optional)
-
-## 🔒 Security Features
-
-- **JWT Authentication** with secure HTTP-only cookies
-- **CORS** protection
-- **Input Validation** and sanitization
-- **Rate Limiting** (implemented in backend)
-- **Secure Headers** with helmet middleware
-- **SQL Injection** protection (MongoDB)
-- **XSS Protection** with proper content encoding
-
-## 📈 Performance Metrics
-
-### Target Performance Goals
-
-- **First Contentful Paint**: < 1.5s
-- **Largest Contentful Paint**: < 2.5s
-- **Cumulative Layout Shift**: < 0.1
-- **First Input Delay**: < 100ms
-- **API Response Time**: < 200ms
-
-### Optimization Checklist
-
-- [x] Code splitting implemented
-- [x] Image optimization enabled
-- [x] API response caching
-- [x] Bundle size optimization
-- [x] Lazy loading for components
-- [x] Service worker (optional)
-- [x] Database query optimization
-- [x] CDN integration (deployment specific)
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run tests and linting
+4. Test thoroughly
 5. Submit a pull request
 
-## 📝 License
+## License
 
-This project is licensed under the MIT License.
+This project is proprietary software. All rights reserved.
 
-## 🆘 Support
+---
 
-For support and questions:
-
-- Create an issue in the repository
-- Check the documentation
-- Review the optimization guides in the docs folder
+**Note**: This is a unified Next.js application. The old separate frontend and backend directories have been removed and all functionality has been consolidated into this single project.
