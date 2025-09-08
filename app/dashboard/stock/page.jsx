@@ -1058,44 +1058,7 @@ export default function StockDashboard() {
         <Card className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-800">Delivery Guys Stock</h2>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => {
-                  dispatch(fetchDeliveryStocks(deliveryFilters));
-                  dispatch(fetchStocks(filters));
-                }}
-                variant="outline"
-                size="sm"
-                className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100"
-              >
-                Refresh Data
-              </Button>
-              <Button 
-                onClick={handleResetChapatiStock}
-                variant="outline"
-                size="sm"
-                className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-              >
-                Reset Chapati
-              </Button>
-              <Button 
-                onClick={handleFixChapatiStock}
-                variant="outline"
-                size="sm"
-              >
-                Fix Chapati Stock
-              </Button>
-              <Button 
-                onClick={handleFixAgentStocks}
-                variant="outline"
-                size="sm"
-              >
-                Fix All Stocks
-              </Button>
-              <Link href="/dashboard/stock/create">
-                <Button>Allocate Stock to Agents</Button>
-              </Link>
-            </div>
+       
           </div>
 
           <Table
