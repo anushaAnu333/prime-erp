@@ -5,9 +5,8 @@ const nextConfig = {
   reactStrictMode: true,
   
   experimental: {
-    // Temporarily disable experimental features that might cause issues
-    // optimizeCss: process.env.NODE_ENV === "production",
-    // optimizePackageImports: ["@/components/ui", "lucide-react", "@heroicons/react"],
+    optimizeCss: process.env.NODE_ENV === "production",
+    optimizePackageImports: ["@/components/ui", "lucide-react", "@heroicons/react"],
   },
 
   // Image optimization
@@ -27,8 +26,7 @@ const nextConfig = {
   // bundleAnalyzer: process.env.ANALYZE === 'true',
 
   // Optimize for Vercel (only in production)
-  // Temporarily disable standalone output to avoid build issues
-  // ...(process.env.NODE_ENV === "production" && { output: "standalone" }),
+  ...(process.env.NODE_ENV === "production" && { output: "standalone" }),
 
   // Performance optimizations
   poweredByHeader: false,
